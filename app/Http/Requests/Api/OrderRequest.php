@@ -29,18 +29,4 @@ class OrderRequest extends FormRequest
             'use_points'          => 'sometimes|boolean',
         ];
     }
-    public function messages(): array
-    {
-        return [
-            'branch_id.required_if' => 'The branch is required.',
-            'branch_id.exists'      => 'The branch is invalid.',
-            'shipping_address_id.exists' => 'The shipping address is invalid.',
-            'billing_address_id.exists'  => 'The billing address is invalid.',
-            'payment_method.required'    => 'The payment method is required.',
-            'payment_method.string'      => 'The payment method must be a string.',
-            'coupon_code.string'         => 'The coupon code must be a string.',
-            'coupon_code.exists'         => 'The coupon code is invalid.',
-            'use_points.boolean'         => 'The use points must be a boolean.',
-        ];
-    }
 }

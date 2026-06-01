@@ -325,9 +325,10 @@ if (!$user) {
 
     protected function syncStoredPhoneFormat(User $user): void
     {
-        $normalized = normalize_phone($user->phone);
+        $stored = $user->getRawOriginal('phone');
+        $normalized = normalize_phone($stored);
 
-        if ($normalized && $user->phone !== $normalized) {
+        if ($normalized && $stored !== $normalized) {
             $this->userRepository->update($user, ['phone' => $normalized]);
         }
     }

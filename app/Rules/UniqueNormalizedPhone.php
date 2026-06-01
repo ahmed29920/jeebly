@@ -17,7 +17,7 @@ class UniqueNormalizedPhone implements ValidationRule
         $existing = app(UserRepository::class)->findByPhone((string) $value);
 
         if ($existing && $existing->id !== $this->ignoreUserId) {
-            $fail(__('validation.unique', ['attribute' => $attribute]));
+            $fail(__('messages.phone_already_registered'));
         }
     }
 }

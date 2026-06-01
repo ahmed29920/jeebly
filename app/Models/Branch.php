@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasInternationalPhoneDisplay;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Translatable\HasTranslations;
 class Branch extends Model
 {
-    use HasTranslations;
+    use HasTranslations, HasInternationalPhoneDisplay;
     protected $fillable = [
         'name',
         'slug',

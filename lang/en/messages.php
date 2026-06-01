@@ -19,6 +19,8 @@ return [
     'password_reset_opt_code_is_verified' => 'Verification code confirmed successfully.',
     'invalid_or_expired_token' => 'Invalid or expired reset token.',
     'invalid_invitation_code' => 'Invalid invitation code.',
+    'phone_not_registered' => 'This phone number is not registered.',
+    'phone_already_registered' => 'This phone number is already registered.',
     'account_deleted_successfully' => 'Your account has been deleted.',
     'no_authenticated_user_found' => 'No authenticated user found.',
     'unauthenticated' => 'Unauthenticated.',

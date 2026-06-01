@@ -11,7 +11,7 @@ class PhoneExists implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! app(UserRepository::class)->findByPhone((string) $value)) {
-            $fail(__('validation.exists', ['attribute' => $attribute]));
+            $fail(__('messages.phone_not_registered'));
         }
     }
 }

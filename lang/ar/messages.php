@@ -19,6 +19,8 @@ return [
     'password_reset_opt_code_is_verified' => 'تم تأكيد رمز التحقق بنجاح.',
     'invalid_or_expired_token' => 'رمز إعادة التعيين غير صالح أو منتهي الصلاحية.',
     'invalid_invitation_code' => 'رمز الدعوة غير صالح.',
+    'phone_not_registered' => 'رقم الهاتف غير مسجل.',
+    'phone_already_registered' => 'رقم الهاتف مسجل مسبقاً.',
     'account_deleted_successfully' => 'تم حذف حسابك بنجاح.',
     'no_authenticated_user_found' => 'لم يتم العثور على مستخدم مسجّل الدخول.',
     'unauthenticated' => 'غير مصرّح.',

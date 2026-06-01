@@ -57,6 +57,10 @@ if (! function_exists('normalize_phone')) {
             return trim($phone);
         }
 
+        if (str_starts_with($digits, '00')) {
+            $digits = substr($digits, 2);
+        }
+
         if (str_starts_with($digits, '964')) {
             $digits = substr($digits, 3);
         }
@@ -77,13 +81,18 @@ if (! function_exists('phone_lookup_variants')) {
      */
     function phone_lookup_variants(?string $phone): array
     {
+        $original = $phone !== null ? trim($phone) : '';
         $normalized = normalize_phone($phone);
 
         if ($normalized === null || $normalized === '') {
-            return [];
+            return $original !== '' ? [$original] : [];
         }
 
         $variants = [$normalized];
+
+        if ($original !== '' && $original !== $normalized) {
+            $variants[] = $original;
+        }
 
         if (str_starts_with($normalized, '0')) {
             $withoutLeadingZero = substr($normalized, 1);
@@ -92,9 +101,48 @@ if (! function_exists('phone_lookup_variants')) {
             $variants[] = '+' . $international;
             $variants[] = $international;
             $variants[] = $withoutLeadingZero;
+
+            // Legacy formats where the leading 0 was kept after the country code.
+            $variants[] = '964' . $normalized;
+            $variants[] = '+964' . $normalized;
+            $variants[] = '00964' . $normalized;
         }
 
         return array_values(array_unique($variants));
+    }
+}
+
+if (! function_exists('format_phone_international')) {
+    /**
+     * Format stored local phone for display/API: 07XXXXXXXXX → +9647XXXXXXXXX
+     */
+    function format_phone_international(?string $phone): ?string
+    {
+        if ($phone === null || trim($phone) === '') {
+            return $phone;
+        }
+
+        $trimmed = trim($phone);
+
+        if (str_starts_with($trimmed, '+964')) {
+            return $trimmed;
+        }
+
+        $normalized = normalize_phone($phone);
+
+        if ($normalized === null || $normalized === '') {
+            return $trimmed;
+        }
+
+        if (str_starts_with($normalized, '0')) {
+            return '+964' . substr($normalized, 1);
+        }
+
+        if (str_starts_with($normalized, '964')) {
+            return '+' . $normalized;
+        }
+
+        return $trimmed;
     }
 }
 
