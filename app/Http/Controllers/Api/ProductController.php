@@ -33,7 +33,7 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $product = $this->service->find($id);
+        $product = $this->service->findActive($id);
         return new ProductResource($product);
     }
 
@@ -52,7 +52,7 @@ class ProductController extends Controller
     public function favoriteList()
     {
         $user = auth()->user();
-        $favorites = $user->favoriteProducts()->with('images')->get();
+        $favorites = $user->favoriteProducts()->where('is_active', true)->with('images')->get();
         return ProductResource::collection($favorites);
     }
 

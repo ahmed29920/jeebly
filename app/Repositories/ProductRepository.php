@@ -53,7 +53,7 @@ class ProductRepository
     // (get only active products) used for shop
     public function active($limit, $filters)
     {
-        $query = Product::query()->with(['categories', 'images']);
+        $query = Product::query()->active()->with(['categories', 'images']);
 
         if (!empty($filters['category_id'])) {
             $query->whereHas('categories', function ($q) use ($filters) {
@@ -161,6 +161,21 @@ class ProductRepository
         ], $this->relatedProductRelations()))->findOrFail($id);
     }
 
+    public function findActive($id)
+    {
+        return $this->model->active()->with(array_merge([
+            'categories',
+            'attributes.options',
+            'images',
+            'unit',
+            'variants' => function ($q) {
+                $q->where('is_active', true)
+                    ->with(['images', 'values.variantOption.variant']);
+            },
+            'approvedReviews',
+        ], $this->activeRelatedProductRelations()))->findOrFail($id);
+    }
+
     public function findForBranchBySlug(string $slug, int $branchId)
     {
         return $this->model
@@ -258,15 +273,33 @@ class ProductRepository
                 return false;
         }
     }
-    public function search($q)
+    public function search($q, bool $activeOnly = false)
     {
-        return Product::query()
-            ->with(['images','unit'])
-            ->where(function ($query) use ($q) {
+        $query = Product::query()->with(['images', 'unit']);
+
+        if ($activeOnly) {
+            $query->active();
+        }
+
+        return $query->where(function ($query) use ($q) {
                 $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, '$.en'))) LIKE ?", ['%' . strtolower($q) . '%'])
                     ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, '$.ar'))) LIKE ?", ['%' . strtolower($q) . '%'])
                     ->orWhere('sku', 'like', "%{$q}%");
             })->limit(10)->get(['id', 'name', 'sku']);
+    }
+
+    protected function activeRelatedProductRelations(): array
+    {
+        return [
+            'relatedProducts' => fn ($query) => $query
+                ->withExistingRelatedProduct()
+                ->whereHas('relatedProduct', fn ($q) => $q->where('is_active', true))
+                ->with(['relatedProduct' => fn ($q) => $q->where('is_active', true)->with('images')]),
+            'crossSellProducts' => fn ($query) => $query
+                ->withExistingRelatedProduct()
+                ->whereHas('relatedProduct', fn ($q) => $q->where('is_active', true))
+                ->with(['relatedProduct' => fn ($q) => $q->where('is_active', true)->with('images')]),
+        ];
     }
 
     protected function relatedProductRelations(): array

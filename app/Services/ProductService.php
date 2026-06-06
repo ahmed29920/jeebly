@@ -75,6 +75,11 @@ class ProductService
         return $this->productRepo->find($id);
     }
 
+    public function findActive($id)
+    {
+        return $this->productRepo->findActive($id);
+    }
+
     public function findForBranchBySlug(string $slug, int $branchId)
     {
         return $this->productRepo->findForBranchBySlug($slug, $branchId);
@@ -319,7 +324,7 @@ class ProductService
 
     public function searchApi(string $term)
     {
-        return $this->productRepo->search($term);
+        return $this->productRepo->search($term, activeOnly: true);
     }
 
     public function import(array $data)

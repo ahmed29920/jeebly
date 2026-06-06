@@ -33,7 +33,11 @@ class CategoryController extends Controller
      */
     public function show(Category $category)
     {
-        $category->load('products.unit','children');
+        $category->load([
+            'products' => fn ($q) => $q->where('is_active', true)->with('unit'),
+            'children',
+        ]);
+
         return new CategoryResource($category);
     }
 
