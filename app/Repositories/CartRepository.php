@@ -4,7 +4,8 @@ namespace App\Repositories;
 
 use App\Models\CartItem;
 use App\Models\Product;
-use Illuminate\Support\Facades\DB;
+use App\Models\ProductVariant;
+use Illuminate\Database\Eloquent\Builder;
 
 class CartRepository
 {
@@ -17,7 +18,50 @@ class CartRepository
 
     public function getUserCartItems(int $userId)
     {
-        return $this->model->with('product.unit')->where('user_id', $userId)->get();
+        $this->purgeInvalidItems($userId);
+
+        return $this->model
+            ->with(['product.unit', 'product.images', 'variant'])
+            ->where('user_id', $userId)
+            ->whereHas('product', fn (Builder $q) => $q->where('is_active', true))
+            ->get()
+            ->filter(function (CartItem $item) {
+                if ($item->product->type === 'variable') {
+                    return $item->variant !== null && $item->variant->is_active;
+                }
+
+                return true;
+            })
+            ->values();
+    }
+
+    public function purgeInvalidItems(int $userId): void
+    {
+        $this->model->where('user_id', $userId)->get()->each(function (CartItem $item) {
+            $product = Product::withTrashed()->find($item->product_id);
+
+            if (! $product || $product->trashed() || ! $product->is_active) {
+                $item->delete();
+
+                return;
+            }
+
+            if ($product->type !== 'variable') {
+                return;
+            }
+
+            if (! $item->variant_id) {
+                $item->delete();
+
+                return;
+            }
+
+            $variant = ProductVariant::withTrashed()->find($item->variant_id);
+
+            if (! $variant || $variant->trashed() || ! $variant->is_active) {
+                $item->delete();
+            }
+        });
     }
 
     public function addOrIncrement(int $userId, Product $product, $variantId = null)
@@ -40,7 +84,7 @@ class CartRepository
             $cartItem->quantity = 1;
             $cartItem->save();
         }
-        return $cartItem;
+        return $cartItem->load(['product.unit', 'product.images', 'variant']);
     }
 
     public function updateQuantity(int $userId, Product $product, int $quantity, $variantId = null)
@@ -51,7 +95,8 @@ class CartRepository
             $cartItem = $this->model->where('user_id', $userId)->where('product_id', $product->id)->firstOrFail();
         }
         $cartItem->update(['quantity' => $quantity]);
-        return $cartItem;
+
+        return $cartItem->load(['product.unit', 'product.images', 'variant']);
     }
 
     public function removeItem(int $userId, Product $product, $variantId = null)

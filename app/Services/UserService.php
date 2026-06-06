@@ -93,7 +93,6 @@ class UserService
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'],
-            'gender' => $data['gender'],
         ];
 
         if (isset($data['image'])) {

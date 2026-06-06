@@ -24,7 +24,7 @@ class EditUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $this->user->id,
             'phone' => ['required', 'string', new UniqueNormalizedPhone($this->user->id)],
-            'role' => 'required|string|in:user,admin',
+            'role' => 'nullable|string|in:user,admin',
             'assigned_role' => 'nullable|string|exists:roles,name',
         ];
     }
