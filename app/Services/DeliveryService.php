@@ -55,6 +55,7 @@ class DeliveryService
             'branch_id' => $data['branch_id'] ?? null,
         ];
         $user = $this->userRepo->create($userData);
+        $user->assignRole('delivery');
         $data['user_id'] = $user->id;
         $delivery = $this->deliveryRepo->create($data);
         $delivery->zones()->sync($zoneIds);
@@ -87,7 +88,12 @@ class DeliveryService
             $userData['password'] = Hash::make($data['password']);
         }
 
-        $this->userRepo->update($delivery->user, $userData);
+        $user = $delivery->user;
+        $this->userRepo->update($user, array_merge($userData, ['role' => 'delivery']));
+
+        if (! $user->hasRole('delivery')) {
+            $user->assignRole('delivery');
+        }
 
         // Remove user fields from data before updating delivery
         unset($data['name'], $data['email'], $data['phone'], $data['password']);
