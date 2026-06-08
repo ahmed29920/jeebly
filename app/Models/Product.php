@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 use App\Factories\ProductPriceStockFactory;
+use App\Models\Concerns\SuffixesUniqueFieldsOnSoftDelete;
 
 class Product extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslations;
+    use HasFactory, SoftDeletes, HasTranslations, SuffixesUniqueFieldsOnSoftDelete;
 
     protected $fillable = [
         'type',

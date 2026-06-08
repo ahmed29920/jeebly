@@ -11,17 +11,17 @@
                     @csrf
                     <div class="mb-3">
                         <label>Name</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                     </div>
 
                     <div class="mb-3">
                         <label>Email</label>
-                        <input type="email" name="email" class="form-control" required>
+                        <input type="email" name="email" class="form-control" value="{{ old('email') }}" required>
                     </div>
 
                     <div class="mb-3">
                         <label>Phone</label>
-                        <input type="text" name="phone" class="form-control" required>
+                        <input type="text" name="phone" class="form-control" value="{{ old('phone') }}" required>
                     </div>
 
                     <div class="mb-3">
@@ -33,8 +33,8 @@
                         <label>User Type</label>
                         <select name="role" id="user_type" class="form-control" required>
                             <option value="">Select User Type</option>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <option value="user" @selected(old('role') === 'user')>User</option>
+                            <option value="admin" @selected(old('role') === 'admin')>Admin</option>
                         </select>
                     </div>
 
@@ -44,7 +44,7 @@
                             <option value="">Select Role</option>
                             @foreach ($roles as $role)
                             @if ($role->name !== 'user')
-                                <option value="{{ $role->name }}">{{ strtoupper($role->name) }}</option>
+                                <option value="{{ $role->name }}" @selected(old('assigned_role') === $role->name)>{{ strtoupper($role->name) }}</option>
                                 @endif
                             @endforeach
                         </select>

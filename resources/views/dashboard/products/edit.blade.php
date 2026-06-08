@@ -1,6 +1,11 @@
 @extends('dashboard.layouts.app')
 
 @section('content')
+    @php
+        $oldCategories = old('categories', $product->categories->pluck('id')->toArray());
+        $oldVariantOptions = old('variant_options', []);
+        $oldAttributes = collect(old('attributes', []));
+    @endphp
     <div class="container-fluid py-4">
         <div class="card">
             <div class="card-header">
@@ -28,30 +33,30 @@
                                     <div class="col-md-6 mb-3">
                                         <label>Product Type <span class="text-danger">*</span></label>
                                         <select name="type" id="product_type" class="form-control" required>
-                                            <option value="simple" {{ ($product->type ?? 'simple') == 'simple' ? 'selected' : '' }}>Simple</option>
-                                            <option value="variable" {{ ($product->type ?? 'simple') == 'variable' ? 'selected' : '' }}>Variable</option>
+                                            <option value="simple" @selected(old('type', $product->type ?? 'simple') === 'simple')>Simple</option>
+                                            <option value="variable" @selected(old('type', $product->type ?? 'simple') === 'variable')>Variable</option>
                                         </select>
                                         <small class="text-muted">Simple: Single product with fixed price and stock. Variable: Product with multiple variants.</small>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>SKU <span class="text-danger">*</span></label>
                                         <input type="text" name="sku" class="form-control"
-                                            value="{{ $product->sku }}" required>
+                                            value="{{ old('sku', $product->sku) }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Name (EN) <span class="text-danger">*</span></label>
                                         <input type="text" name="name[en]" class="form-control"
-                                            value="{{ $product->getTranslation('name', 'en') }}" required>
+                                            value="{{ old('name.en', $product->getTranslation('name', 'en')) }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Name (AR) <span class="text-danger">*</span></label>
                                         <input type="text" name="name[ar]" class="form-control"
-                                            value="{{ $product->getTranslation('name', 'ar') }}" required>
+                                            value="{{ old('name.ar', $product->getTranslation('name', 'ar')) }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Slug <span class="text-danger">*</span></label>
                                         <input type="text" name="slug" class="form-control"
-                                            value="{{ $product->slug }}" required>
+                                            value="{{ old('slug', $product->slug) }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Unit</label>
@@ -59,7 +64,7 @@
                                             <option value="">-- Select Unit --</option>
                                             @if(isset($units) && $units->count() > 0)
                                                 @foreach($units as $unit)
-                                                    <option value="{{ $unit->id }}" {{ $product->unit_id == $unit->id ? 'selected' : '' }}>
+                                                    <option value="{{ $unit->id }}" @selected(old('unit_id', $product->unit_id) == $unit->id)>
                                                         {{ $unit->getTranslation('name', 'en') }}
                                                         ({{ is_array($unit->code) ? ($unit->code['en'] ?? '') : $unit->code }})
                                                     </option>
@@ -71,19 +76,19 @@
 
                                 <div class="mb-3">
                                     <label>Short Description (EN)</label>
-                                    <textarea name="short_description[en]" class="form-control">{{ $product->getTranslation('short_description', 'en') }}</textarea>
+                                    <textarea name="short_description[en]" class="form-control">{{ old('short_description.en', $product->getTranslation('short_description', 'en')) }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Short Description (AR)</label>
-                                    <textarea name="short_description[ar]" class="form-control">{{ $product->getTranslation('short_description', 'ar') }}</textarea>
+                                    <textarea name="short_description[ar]" class="form-control">{{ old('short_description.ar', $product->getTranslation('short_description', 'ar')) }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Description (EN)</label>
-                                    <textarea name="description[en]" class="form-control">{{ $product->getTranslation('description', 'en') }}</textarea>
+                                    <textarea name="description[en]" class="form-control">{{ old('description.en', $product->getTranslation('description', 'en')) }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Description (AR)</label>
-                                    <textarea name="description[ar]" class="form-control">{{ $product->getTranslation('description', 'ar') }}</textarea>
+                                    <textarea name="description[ar]" class="form-control">{{ old('description.ar', $product->getTranslation('description', 'ar')) }}</textarea>
                                 </div>
                             </div>
 
@@ -99,7 +104,7 @@
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
                                                     <label>Price <span class="text-danger">*</span></label>
-                                                    <input type="number" name="price" id="product_price" class="form-control" step="0.01" min="0" placeholder="0.00" value="{{ $product->price ?? 0 }}" required>
+                                                    <input type="number" name="price" id="product_price" class="form-control" step="0.01" min="0" placeholder="0.00" value="{{ old('price', $product->price ?? 0) }}" required>
                                                 </div>
                                                 <div class="col-md-6 mb-3">
                                                     <label>Stock</label>
@@ -242,6 +247,7 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody id="product-variants-tbody">
+                                                            @if (! old('product_variants'))
                                                             @foreach($product->variants as $index => $productVariant)
                                                                 @php
                                                                     $variantValues = $productVariant->values->pluck('variant_option_id')->toArray();
@@ -327,6 +333,7 @@
                                                                     </td>
                                                                 </tr>
                                                             @endforeach
+                                                            @endif
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -345,53 +352,53 @@
                                     <div class="col-md-4 mb-3">
                                         <label>Discount</label>
                                         <input type="number" name="discount" class="form-control"
-                                            value="{{ $product->discount }}" step="0.01" min="0">
+                                            value="{{ old('discount', $product->discount) }}" step="0.01" min="0">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label>Discount Type</label>
                                         <select name="discount_type" class="form-control">
-                                            <option value="percentage" {{ ($product->discount_type ?? 'percentage') == 'percentage' ? 'selected' : '' }}>Percentage (%)</option>
-                                            <option value="fixed" {{ ($product->discount_type ?? 'percentage') == 'fixed' ? 'selected' : '' }}>Fixed Amount</option>
+                                            <option value="percentage" @selected(old('discount_type', $product->discount_type ?? 'percentage') === 'percentage')>Percentage (%)</option>
+                                            <option value="fixed" @selected(old('discount_type', $product->discount_type ?? 'percentage') === 'fixed')>Fixed Amount</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label>Max Order Quantity</label>
                                         <input type="number" name="max_order_quantity" class="form-control"
-                                            value="{{ $product->max_order_quantity ?? 1 }}" min="1">
+                                            value="{{ old('max_order_quantity', $product->max_order_quantity ?? 1) }}" min="1">
                                     </div>
                                     <div class="col-md-12 mb-3">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="manage_stock"
                                                 id="manage_stock" value="1"
-                                                {{ $product->manage_stock ? 'checked' : '' }}>
+                                                @checked(old('manage_stock', $product->manage_stock))>
                                             <label class="form-check-label" for="manage_stock">Manage Stock</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_active"
-                                                value="1" {{ $product->is_active ? 'checked' : '' }}>
+                                                value="1" @checked(old('is_active', $product->is_active))>
                                             <label for="is_active" class="form-check-label">Active</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_featured"
-                                                value="1" {{ $product->is_featured ? 'checked' : '' }}>
+                                                value="1" @checked(old('is_featured', $product->is_featured))>
                                             <label for="is_featured" class="form-check-label">Featured</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_new"
-                                                value="1" {{ $product->is_new ? 'checked' : '' }}>
+                                                value="1" @checked(old('is_new', $product->is_new))>
                                             <label for="is_new" class="form-check-label">New</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_bookable"
-                                                value="1" id="is_bookable" {{ $product->is_bookable ? 'checked' : '' }}>
+                                                value="1" id="is_bookable" @checked(old('is_bookable', $product->is_bookable))>
                                             <label for="is_bookable" class="form-check-label">Bookable</label>
                                         </div>
                                     </div>
@@ -430,7 +437,7 @@
                                 <label class="form-label">Categories (Multiple Selection Allowed)</label>
                                 <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
                                     @php
-                                        $selectedCategories = $product->categories->pluck('id')->toArray();
+                                        $selectedCategories = $oldCategories;
                                         $renderCheckboxes = function (
                                             $categories,
                                             $prefix = '',
@@ -588,30 +595,30 @@
                                 <div class="mb-3">
                                     <label>Meta Title (EN)</label>
                                     <input type="text" name="meta_title[en]" class="form-control"
-                                        value="{{ $product->getTranslation('meta_title', 'en') }}">
+                                        value="{{ old('meta_title.en', $product->getTranslation('meta_title', 'en')) }}">
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Title (AR)</label>
                                     <input type="text" name="meta_title[ar]" class="form-control"
-                                        value="{{ $product->getTranslation('meta_title', 'ar') }}">
+                                        value="{{ old('meta_title.ar', $product->getTranslation('meta_title', 'ar')) }}">
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Description (EN)</label>
-                                    <textarea name="meta_description[en]" class="form-control">{{ $product->getTranslation('meta_description', 'en') }}</textarea>
+                                    <textarea name="meta_description[en]" class="form-control">{{ old('meta_description.en', $product->getTranslation('meta_description', 'en')) }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Description (AR)</label>
-                                    <textarea name="meta_description[ar]" class="form-control">{{ $product->getTranslation('meta_description', 'ar') }}</textarea>
+                                    <textarea name="meta_description[ar]" class="form-control">{{ old('meta_description.ar', $product->getTranslation('meta_description', 'ar')) }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Keywords (EN)</label>
                                     <input type="text" name="meta_keywords[en]" class="form-control"
-                                        value="{{ $product->getTranslation('meta_keywords', 'en') }}">
+                                        value="{{ old('meta_keywords.en', $product->getTranslation('meta_keywords', 'en')) }}">
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Keywords (AR)</label>
                                     <input type="text" name="meta_keywords[ar]" class="form-control"
-                                        value="{{ $product->getTranslation('meta_keywords', 'ar') }}">
+                                        value="{{ old('meta_keywords.ar', $product->getTranslation('meta_keywords', 'ar')) }}">
                                 </div>
                             </div>
                         </div>
@@ -671,6 +678,9 @@
     <link href="https://cdn.jsdelivr.net/npm/smartwizard@5/dist/css/smart_wizard.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js" integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css" integrity="sha512-3pIirOrwegjM6erE5gPSwkUzO+3cTjpnV9lexlNZqvupR64iZBnOOTiiLPb9M36zpMScbmUNIcHUqKD47M719g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    @include('dashboard.products.partials.variant-restore-script')
+
     <script>
         $(document).ready(function() {
 
@@ -723,6 +733,7 @@
 
             // Initialize on page load
             toggleProductTypeFields();
+            restoreProductFormState();
 
             // Toggle on change
             $('#product_type').on('change', function() {

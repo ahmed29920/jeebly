@@ -192,7 +192,9 @@ class OrderService
                 $shippingCost = $minShippingCost;
             }
 
-            $finalTotal = $subtotalAfterDiscount + $shippingCost;
+            $serviceFee = max(0, (float) setting('service_fee', 0));
+
+            $finalTotal = $subtotalAfterDiscount + $shippingCost + $serviceFee;
 
             // Create order
             $orderData = [
@@ -207,6 +209,7 @@ class OrderService
                 'final_total' => $finalTotal,
                 'note' => $note,
                 'shipping_cost' => $shippingCost,
+                'service_fee' => $serviceFee,
                 'payment_status' => 'pending',
                 'payment_method' => $paymentMethod,
                 'shipping_address_id' => $shippingAddressId,

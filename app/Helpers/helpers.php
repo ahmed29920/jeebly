@@ -171,3 +171,49 @@ if (! function_exists('arabic_pdf')) {
         return $arabic->utf8Glyphs($text);
     }
 }
+
+if (! function_exists('unique_among_active')) {
+    /**
+     * Unique rule that ignores soft-deleted rows.
+     */
+    function unique_among_active(string $table, string $column, mixed $ignoreId = null): \Illuminate\Validation\Rules\Unique
+    {
+        $rule = \Illuminate\Validation\Rule::unique($table, $column)->whereNull('deleted_at');
+
+        if ($ignoreId !== null && $ignoreId !== '') {
+            $rule->ignore($ignoreId);
+        }
+
+        return $rule;
+    }
+}
+
+if (! function_exists('release_soft_deleted_unique')) {
+    /**
+     * Rename slug/sku on trashed records so the value can be reused.
+     */
+    function release_soft_deleted_unique(string $modelClass, string $column, ?string $value, mixed $ignoreId = null): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        $query = $modelClass::withTrashed()->where($column, $value);
+
+        if ($ignoreId !== null && $ignoreId !== '') {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        foreach ($query->get() as $model) {
+            if ($model->trashed()) {
+                $suffix = '-deleted-' . $model->getKey();
+                $current = $model->getAttribute($column);
+
+                if ($current !== null && $current !== '' && ! str_ends_with($current, $suffix)) {
+                    $model->{$column} = $current . $suffix;
+                    $model->saveQuietly();
+                }
+            }
+        }
+    }
+}

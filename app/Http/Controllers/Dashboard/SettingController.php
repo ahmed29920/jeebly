@@ -20,6 +20,7 @@ class SettingController extends Controller
             'invitation_discount_points',
             'shipping_cost',
             'min_shipping_cost',
+            'service_fee',
             'delivery_man_calculation_method',
             'delivery_man_calculation_value',
             'allow_order_points',

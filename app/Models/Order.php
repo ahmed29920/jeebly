@@ -16,6 +16,7 @@ class Order extends Model
         'status',
         'total',
         'shipping_cost',
+        'service_fee',
         'coupon_id',
         'points_discount_value',
         'coupon_discount_value',
@@ -40,6 +41,7 @@ class Order extends Model
         'offer_discount_value' => 'decimal:2',
         'final_total'    => 'decimal:2',
         'shipping_cost'  => 'decimal:2',
+        'service_fee'    => 'decimal:2',
         'branch_id'      => 'integer',
 	'route'         => 'json',
     ];

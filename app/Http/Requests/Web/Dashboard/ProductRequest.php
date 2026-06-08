@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Web\Dashboard;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -29,12 +30,12 @@ class ProductRequest extends FormRequest
             'categories.*'        => 'exists:categories,id',
             'name.en'              => 'required|string|max:255',
             'name.ar'              => 'required|string|max:255',
-            'slug'                 => 'required|string|max:255|unique:products,slug,' . $this->product?->id,
+            'slug'                 => ['required', 'string', 'max:255', unique_among_active('products', 'slug', $this->product?->id)],
             'description.en'       => 'nullable|string',
             'description.ar'       => 'nullable|string',
             'short_description.en' => 'nullable|string',
             'short_description.ar' => 'nullable|string',
-            'sku'                  => 'required|string|max:255|unique:products,sku,' . $this->product?->id,
+            'sku'                  => ['required', 'string', 'max:255', unique_among_active('products', 'sku', $this->product?->id)],
             'discount'             => 'nullable|numeric|min:0',
             'discount_type'        => 'nullable|in:percentage,fixed',
             'max_order_quantity'   => 'nullable|integer|min:1',
@@ -97,6 +98,7 @@ class ProductRequest extends FormRequest
 
         return $rules;
     }
+
     public function withValidator(Validator $validator)
     {
         $validator->after(function ($validator) {
@@ -105,27 +107,69 @@ class ProductRequest extends FormRequest
             $productVariants = request()->get('product_variants', []);
 
             if ($productId) {
-                // related_products check
                 if (in_array($productId, $this->related_products ?? [])) {
                     $validator->errors()->add('related_products', 'Product cannot be related to itself.');
                 }
 
-                // cross_sell_products check
                 if (in_array($productId, $this->cross_sell_products ?? [])) {
                     $validator->errors()->add('cross_sell_products', 'Product cannot be cross-sell of itself.');
                 }
-
-                // Note: Converting from variable to simple is allowed - ProductService will handle
-                // deletion of variants and their associated data (images, values) automatically
             }
 
-            // Validate that variable products have at least one variant
             if ($type === 'variable') {
                 if (empty($productVariants) || count($productVariants) === 0) {
                     $validator->errors()->add('product_variants', 'Variable products must have at least one variant.');
+                } else {
+                    $this->validateVariantUniqueness($validator, $productVariants);
                 }
             }
         });
+    }
+
+    protected function validateVariantUniqueness(Validator $validator, array $productVariants): void
+    {
+        $slugs = [];
+        $skus = [];
+
+        foreach ($productVariants as $index => $variant) {
+            $slug = $variant['slug'] ?? null;
+            $sku = $variant['sku'] ?? null;
+            $variantId = $variant['id'] ?? null;
+
+            if ($slug) {
+                if (in_array($slug, $slugs, true)) {
+                    $validator->errors()->add("product_variants.{$index}.slug", 'Duplicate variant slug in this form.');
+                } else {
+                    $slugs[] = $slug;
+
+                    $slugTaken = ProductVariant::whereNull('deleted_at')
+                        ->where('slug', $slug)
+                        ->when($variantId, fn ($q) => $q->where('id', '!=', $variantId))
+                        ->exists();
+
+                    if ($slugTaken) {
+                        $validator->errors()->add("product_variants.{$index}.slug", 'Variant slug must be unique.');
+                    }
+                }
+            }
+
+            if ($sku) {
+                if (in_array($sku, $skus, true)) {
+                    $validator->errors()->add("product_variants.{$index}.sku", 'Duplicate variant SKU in this form.');
+                } else {
+                    $skus[] = $sku;
+
+                    $skuTaken = ProductVariant::whereNull('deleted_at')
+                        ->where('sku', $sku)
+                        ->when($variantId, fn ($q) => $q->where('id', '!=', $variantId))
+                        ->exists();
+
+                    if ($skuTaken) {
+                        $validator->errors()->add("product_variants.{$index}.sku", 'Variant SKU must be unique.');
+                    }
+                }
+            }
+        }
     }
 
     public function messages(): array

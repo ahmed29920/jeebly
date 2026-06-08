@@ -1,6 +1,11 @@
 @extends('dashboard.layouts.app')
 
 @section('content')
+    @php
+        $oldCategories = old('categories', []);
+        $oldVariantOptions = old('variant_options', []);
+        $oldAttributes = collect(old('attributes', []));
+    @endphp
     <div class="container-fluid py-4">
         <div class="card">
             <div class="card-header">
@@ -28,26 +33,26 @@
                                     <div class="col-md-6 mb-3">
                                         <label>Product Type <span class="text-danger">*</span></label>
                                         <select name="type" id="product_type" class="form-control" required>
-                                            <option value="simple">Simple</option>
-                                            <option value="variable">Variable</option>
+                                            <option value="simple" @selected(old('type', 'simple') === 'simple')>Simple</option>
+                                            <option value="variable" @selected(old('type') === 'variable')>Variable</option>
                                         </select>
                                         <small class="text-muted">Simple: Single product with fixed price and stock. Variable: Product with multiple variants.</small>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>SKU <span class="text-danger">*</span></label>
-                                        <input type="text" name="sku" class="form-control" required>
+                                        <input type="text" name="sku" class="form-control" value="{{ old('sku') }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Name (EN) <span class="text-danger">*</span></label>
-                                        <input type="text" name="name[en]" class="form-control" required>
+                                        <input type="text" name="name[en]" class="form-control" value="{{ old('name.en') }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Name (AR) <span class="text-danger">*</span></label>
-                                        <input type="text" name="name[ar]" class="form-control" required>
+                                        <input type="text" name="name[ar]" class="form-control" value="{{ old('name.ar') }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Slug <span class="text-danger">*</span></label>
-                                        <input type="text" name="slug" class="form-control" required>
+                                        <input type="text" name="slug" class="form-control" value="{{ old('slug') }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label>Unit</label>
@@ -55,7 +60,7 @@
                                             <option value="">-- Select Unit --</option>
                                             @if(isset($units) && $units->count() > 0)
                                                 @foreach($units as $unit)
-                                                    <option value="{{ $unit->id }}">
+                                                    <option value="{{ $unit->id }}" @selected(old('unit_id') == $unit->id)>
                                                         {{ $unit->getTranslation('name', 'en') }}
                                                         ({{ is_array($unit->code) ? ($unit->code['en'] ?? '') : $unit->code }})
                                                     </option>
@@ -67,21 +72,21 @@
 
                                 <div class="mb-3">
                                     <label>Short Description (EN)</label>
-                                    <textarea name="short_description[en]" class="form-control"></textarea>
+                                    <textarea name="short_description[en]" class="form-control">{{ old('short_description.en') }}</textarea>
                                 </div>
 
                                 <div class="mb-3">
                                     <label>Short Description (AR)</label>
-                                    <textarea name="short_description[ar]" class="form-control"></textarea>
+                                    <textarea name="short_description[ar]" class="form-control">{{ old('short_description.ar') }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Description (EN)</label>
-                                    <textarea name="description[en]" class="form-control"></textarea>
+                                    <textarea name="description[en]" class="form-control">{{ old('description.en') }}</textarea>
                                 </div>
 
                                 <div class="mb-3">
                                     <label>Description (AR)</label>
-                                    <textarea name="description[ar]" class="form-control"></textarea>
+                                    <textarea name="description[ar]" class="form-control">{{ old('description.ar') }}</textarea>
                                 </div>
                             </div>
 
@@ -97,7 +102,7 @@
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
                                                     <label>Price <span class="text-danger">*</span></label>
-                                                    <input type="number" name="price" id="product_price" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+                                                    <input type="number" name="price" id="product_price" class="form-control" step="0.01" min="0" placeholder="0.00" value="{{ old('price') }}" required>
                                                 </div>
                                             </div>
                                         </div>
@@ -141,7 +146,8 @@
                                                                                 data-variant-id="{{ $variant->id }}"
                                                                                 data-variant-name="{{ $variant->getTranslation('name', 'en') }}"
                                                                                 data-option-name="{{ $option->getTranslation('name', 'en') }}"
-                                                                                data-option-code="{{ $option->code }}">
+                                                                                data-option-code="{{ $option->code }}"
+                                                                                @checked(isset($oldVariantOptions[$variant->id]) && in_array($option->id, (array) $oldVariantOptions[$variant->id]))>
                                                                             <label class="form-check-label" for="variant_option_{{ $option->id }}">
                                                                                 {{ $option->getTranslation('name', 'en') }}
                                                                                 <small class="text-muted">({{ $option->code }})</small>
@@ -217,7 +223,7 @@
                                                                class="form-control"
                                                                min="0"
                                                                placeholder="0"
-                                                               value="0">
+                                                               value="{{ old('branch_stocks.' . $branch->id, 0) }}">
                                                     </div>
                                                 @endforeach
                                             @else
@@ -234,53 +240,53 @@
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label>Discount</label>
-                                        <input type="number" name="discount" class="form-control" value="0"
+                                        <input type="number" name="discount" class="form-control" value="{{ old('discount', 0) }}"
                                             step="0.01" min="0">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label>Discount Type</label>
                                         <select name="discount_type" class="form-control">
-                                            <option value="percentage" selected>Percentage (%)</option>
-                                            <option value="fixed">Fixed Amount</option>
+                                            <option value="percentage" @selected(old('discount_type', 'percentage') === 'percentage')>Percentage (%)</option>
+                                            <option value="fixed" @selected(old('discount_type') === 'fixed')>Fixed Amount</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label>Max Order Quantity</label>
                                         <input type="number" name="max_order_quantity" class="form-control"
-                                            value="1" min="1">
+                                            value="{{ old('max_order_quantity', 1) }}" min="1">
                                     </div>
                                     <div class="col-md-12 mb-3">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="manage_stock"
-                                                id="manage_stock" value="1" checked>
+                                                id="manage_stock" value="1" @checked(old('manage_stock', '1'))>
                                             <label class="form-check-label" for="manage_stock">Manage Stock</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_active"
-                                                value="1" id="is_active">
+                                                value="1" id="is_active" @checked(old('is_active'))>
                                             <label for="is_active" class="form-check-label">Active</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_bookable"
-                                                value="1" id="is_bookable">
+                                                value="1" id="is_bookable" @checked(old('is_bookable'))>
                                             <label for="is_bookable" class="form-check-label">Bookable</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_featured"
-                                                value="1" id="is_featured">
+                                                value="1" id="is_featured" @checked(old('is_featured'))>
                                             <label for="is_featured" class="form-check-label">Featured</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <div class="form-check mt-4">
                                             <input type="checkbox" class="form-check-input" name="is_new"
-                                                value="1" id="is_new">
+                                                value="1" id="is_new" @checked(old('is_new'))>
                                             <label for="is_new" class="form-check-label">New</label>
                                         </div>
                                     </div>
@@ -325,16 +331,17 @@
                                 <label class="form-label">Categories (Multiple Selection Allowed)</label>
                                 <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
                                     @php
-                                        $renderCheckboxes = function ($categories, $prefix = '') use (
+                                        $renderCheckboxes = function ($categories, $prefix = '', $selected = []) use (
                                             &$renderCheckboxes,
                                         ) {
                                             foreach ($categories as $cat) {
+                                                $checked = in_array($cat['id'], $selected) ? ' checked' : '';
                                                 echo '<div class="form-check">';
                                                 echo '<input class="form-check-input" type="checkbox" name="categories[]" value="' .
                                                     $cat['id'] .
                                                     '" id="category_' .
                                                     $cat['id'] .
-                                                    '">';
+                                                    '"' . $checked . '>';
                                                 echo '<label class="form-check-label" for="category_' .
                                                     $cat['id'] .
                                                     '">' .
@@ -344,13 +351,13 @@
                                                 echo '</div>';
                                                 if (!empty($cat['children'])) {
                                                     echo '<div class="ms-4">';
-                                                    $renderCheckboxes($cat['children'], $prefix . '— ');
+                                                    $renderCheckboxes($cat['children'], $prefix . '— ', $selected);
                                                     echo '</div>';
                                                 }
                                             }
                                         };
                                     @endphp
-                                    {!! $renderCheckboxes($categories) !!}
+                                    {!! $renderCheckboxes($categories, '', $oldCategories) !!}
                                 </div>
                             </div>
 
@@ -359,6 +366,10 @@
                                 <h6>Select Attributes</h6>
                                 <div class="row">
                                     @foreach ($attributes as $attribute)
+                                        @php
+                                            $oldAttribute = $oldAttributes->firstWhere('attribute_id', (string) $attribute->id)
+                                                ?? $oldAttributes->firstWhere('attribute_id', $attribute->id);
+                                        @endphp
                                         <div class="col-md-4 mb-3">
                                             <label>{{ $attribute->getTranslation('name', 'en') }}
                                                 @if ($attribute->is_required)
@@ -375,7 +386,7 @@
                                                     class="form-control">
                                                     <option value="">-- Select --</option>
                                                     @foreach ($attribute->options as $option)
-                                                        <option value="{{ $option->id }}">{{ $option->value }}</option>
+                                                        <option value="{{ $option->id }}" @selected(($oldAttribute['attribute_option_id'] ?? null) == $option->id)>{{ $option->value }}</option>
                                                     @endforeach
                                                 </select>
                                             @else
@@ -383,7 +394,7 @@
                                                     name="attributes[{{ $loop->index }}][attribute_id]"
                                                     value="{{ $attribute->id }}">
                                                 <input type="text" name="attributes[{{ $loop->index }}][value]"
-                                                    class="form-control" placeholder="Enter value">
+                                                    class="form-control" placeholder="Enter value" value="{{ $oldAttribute['value'] ?? '' }}">
                                             @endif
                                         </div>
                                     @endforeach
@@ -443,27 +454,27 @@
                                 <h6>SEO Fields</h6>
                                 <div class="mb-3">
                                     <label>Meta Title (EN)</label>
-                                    <input type="text" name="meta_title[en]" class="form-control">
+                                    <input type="text" name="meta_title[en]" class="form-control" value="{{ old('meta_title.en') }}">
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Title (AR)</label>
-                                    <input type="text" name="meta_title[ar]" class="form-control">
+                                    <input type="text" name="meta_title[ar]" class="form-control" value="{{ old('meta_title.ar') }}">
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Description (EN)</label>
-                                    <textarea name="meta_description[en]" class="form-control"></textarea>
+                                    <textarea name="meta_description[en]" class="form-control">{{ old('meta_description.en') }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Description (AR)</label>
-                                    <textarea name="meta_description[ar]" class="form-control"></textarea>
+                                    <textarea name="meta_description[ar]" class="form-control">{{ old('meta_description.ar') }}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Keywords (EN)</label>
-                                    <input type="text" name="meta_keywords[en]" class="form-control">
+                                    <input type="text" name="meta_keywords[en]" class="form-control" value="{{ old('meta_keywords.en') }}">
                                 </div>
                                 <div class="mb-3">
                                     <label>Meta Keywords (AR)</label>
-                                    <input type="text" name="meta_keywords[ar]" class="form-control">
+                                    <input type="text" name="meta_keywords[ar]" class="form-control" value="{{ old('meta_keywords.ar') }}">
                                 </div>
                             </div>
 
@@ -536,6 +547,8 @@
         }));
     </script>
 
+    @include('dashboard.products.partials.variant-restore-script')
+
     <script>
         // Initialize wizard, Image preview, Generate slug
         $(document).ready(function() {
@@ -592,6 +605,7 @@
 
             // Initialize on page load
             toggleProductTypeFields();
+            restoreProductFormState();
 
             // Toggle on change
             $('#product_type').on('change', function() {
@@ -874,7 +888,6 @@
                 let variantCodes = combination.map(c => c.optionCode).join('-');
                 let optionIds = combination.map(c => c.id);
 
-                // Generate unique slug by combining product base SKU with variant codes
                 let baseSku = $('input[name="sku"]').val() || 'PROD';
                 let uniqueSlug = baseSku.toLowerCase() + '-' + variantCodes.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
@@ -885,65 +898,16 @@
                     codes: variantCodes
                 });
 
-                let row = `
-                    <tr data-variant-index="${variantIndex}">
-                        <td>
-                            <input type="text" name="product_variants[${variantIndex}][name][en]"
-                                class="form-control" value="${variantName}" required>
-                            <input type="text" name="product_variants[${variantIndex}][name][ar]"
-                                class="form-control mt-1" placeholder="Arabic name" required>
-                            <input type="hidden" name="product_variants[${variantIndex}][slug]"
-                                value="${uniqueSlug}">
-                            ${optionIds.map((optId, idx) => `
-                                <input type="hidden" name="product_variants[${variantIndex}][variant_values][${idx}][variant_option_id]" value="${optId}">
-                            `).join('')}
-                        </td>
-                        <td>
-                            <input type="text" name="product_variants[${variantIndex}][sku]"
-                                class="form-control" placeholder="SKU"
-                                value="${baseSku}-${variantCodes}" required>
-                        </td>
-                        <td>
-                            <input type="number" name="product_variants[${variantIndex}][price]"
-                                class="form-control" step="0.01" min="0" placeholder="0.00" required>
-                        </td>
-                        <td>
-                            <div class="variant-branch-stocks-${variantIndex}" style="max-width: 200px; max-height: 150px; overflow-y: auto;">
-                                ${(typeof window.branchesData !== 'undefined' && window.branchesData.length > 0) ?
-                                    window.branchesData.map(function(branch) {
-                                        return '<div class="mb-1"><label class="text-xs" style="font-size: 0.7rem;">' + branch.name + '</label><input type="number" name="product_variants[' + variantIndex + '][branch_stocks][' + branch.id + ']" class="form-control form-control-sm" min="0" placeholder="0" value="0" style="font-size: 0.75rem;"></div>';
-                                    }).join('') :
-                                    '<p class="text-muted text-xs">No branches</p>'
-                                }
-                            </div>
-                        </td>
-                        <td>
-                            <div class="variant-images-container-${variantIndex}" style="max-width: 200px;">
-                                <input type="file"
-                                    name="product_variants[${variantIndex}][images][]"
-                                    class="form-control form-control-sm variant-image-input"
-                                    accept="image/*"
-                                    multiple
-                                    data-variant-index="${variantIndex}"
-                                    style="font-size: 0.75rem;">
-                                <div class="variant-images-preview-${variantIndex} d-flex flex-wrap gap-1 mt-2"></div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="form-check">
-                                <input type="checkbox" name="product_variants[${variantIndex}][is_active]"
-                                    class="form-check-input" value="1" checked>
-                            </div>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-danger remove-variant-row"
-                                data-index="${variantIndex}">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                $('#product-variants-tbody').append(row);
+                appendVariantRow({
+                    name: { en: variantName, ar: '' },
+                    slug: uniqueSlug,
+                    sku: baseSku + '-' + variantCodes,
+                    price: '',
+                    is_active: true,
+                    variant_values: optionIds.map(id => ({ variant_option_id: id })),
+                    branch_stocks: {},
+                }, variantIndex);
+
                 variantIndex++;
             });
 

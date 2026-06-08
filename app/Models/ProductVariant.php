@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\SuffixesUniqueFieldsOnSoftDelete;
 
 class ProductVariant extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslations;
+    use HasFactory, SoftDeletes, HasTranslations, SuffixesUniqueFieldsOnSoftDelete;
 
     protected $fillable = [
         'name',

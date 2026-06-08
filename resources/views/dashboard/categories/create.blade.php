@@ -13,31 +13,31 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>{{__('Name')}} (EN) <span class="text-danger">*</span></label>
-                                <input type="text" name="name[en]" class="form-control" required>
+                                <input type="text" name="name[en]" class="form-control" value="{{ old('name.en') }}" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>{{__('Name')}} (AR) <span class="text-danger">*</span></label>
-                                <input type="text" name="name[ar]" class="form-control" required>
+                                <input type="text" name="name[ar]" class="form-control" value="{{ old('name.ar') }}" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>{{__('Slug')}} <span class="text-danger">*</span></label>
-                                <input type="text" name="slug" class="form-control" required>
+                                <input type="text" name="slug" class="form-control" value="{{ old('slug') }}" required>
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label>{{__('Description')}} (EN)</label>
-                        <textarea name="description[en]" class="form-control"></textarea>
+                        <textarea name="description[en]" class="form-control">{{ old('description.en') }}</textarea>
                     </div>
 
                     <div class="mb-3">
                         <label>{{__('Description')}} (AR)</label>
-                        <textarea name="description[ar]" class="form-control"></textarea>
+                        <textarea name="description[ar]" class="form-control">{{ old('description.ar') }}</textarea>
                     </div>
 
                     <hr>
@@ -54,6 +54,7 @@
                         <label class="form-label">{{__('Parent Category')}}</label>
                         <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
                             @php
+                                $selectedParent = old('parent_id');
                                 $renderRadios = function ($categories, $prefix = '', $selected = null) use (
                                     &$renderRadios,
                                 ) {
@@ -81,11 +82,11 @@
 
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="parent_id" value=""
-                                    {{ empty($category->parent_id) ? 'checked' : '' }}>
+                                    @checked($selectedParent === null || $selectedParent === '')>
                                 <label class="form-check-label">-- None --</label>
                             </div>
 
-                            {!! $renderRadios($categories, '', $category->parent_id ?? null) !!}
+                            {!! $renderRadios($categories, '', $selectedParent) !!}
                         </div>
                     </div>
 
@@ -95,13 +96,13 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>{{__('Sort Order')}}</label>
-                                <input type="number" name="sort_order" class="form-control" value="1">
+                                <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', 1) }}">
                             </div>
                         </div>
                         <div class="col-md-4 align-content-center">
                             <div class="form-check pt-3">
                                 <input class="form-check-input border" type="checkbox" name="is_active" id="is_active"
-                                    value="1" checked>
+                                    value="1" @checked(old('is_active', true))>
                                 <label class="form-check-label" for="is_active">
                                     {{__('Active')}}
                                 </label>
@@ -111,7 +112,7 @@
 
                             <div class="form-check pt-3">
                                 <input class="form-check-input border" type="checkbox" name="view_in_home" id="view_in_home"
-                                    value="1">
+                                    value="1" @checked(old('view_in_home'))>
                                 <label class="form-check-label" for="view_in_home">
                                     {{__('View in Home')}}
                                 </label>
@@ -124,28 +125,28 @@
 
                     <div class="mb-3">
                         <label>{{__('Meta Title')}} (EN)</label>
-                        <input type="text" name="meta_title[en]" class="form-control">
+                        <input type="text" name="meta_title[en]" class="form-control" value="{{ old('meta_title.en') }}">
                     </div>
                     <div class="mb-3">
                         <label>{{__('Meta Title')}} (AR)</label>
-                        <input type="text" name="meta_title[ar]" class="form-control">
+                        <input type="text" name="meta_title[ar]" class="form-control" value="{{ old('meta_title.ar') }}">
                     </div>
                     <div class="mb-3">
                         <label>{{__('Meta Description')}} (EN)</label>
-                        <textarea name="meta_description[en]" class="form-control"></textarea>
+                        <textarea name="meta_description[en]" class="form-control">{{ old('meta_description.en') }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label>{{__('Meta Description')}} (AR)</label>
-                        <textarea name="meta_description[ar]" class="form-control"></textarea>
+                        <textarea name="meta_description[ar]" class="form-control">{{ old('meta_description.ar') }}</textarea>
                     </div>
 
                     <div class="mb-3">
                         <label>{{__('Meta Keywords')}} (EN)</label>
-                        <input type="text" name="meta_keywords[en]" class="form-control">
+                        <input type="text" name="meta_keywords[en]" class="form-control" value="{{ old('meta_keywords.en') }}">
                     </div>
                     <div class="mb-3">
                         <label>{{__('Meta Keywords')}} (AR)</label>
-                        <input type="text" name="meta_keywords[ar]" class="form-control">
+                        <input type="text" name="meta_keywords[ar]" class="form-control" value="{{ old('meta_keywords.ar') }}">
                     </div>
 
                     <button class="btn btn-primary mt-3" type="submit">{{__('Save')}}</button>
@@ -156,7 +157,6 @@
 @endsection
 @push('scripts')
     <script>
-        // Image preview
         document.getElementById('image').addEventListener('change', function(e) {
             const [file] = this.files;
             if (file) {
@@ -166,14 +166,13 @@
             }
         });
 
-        // Generate slug from name[en]
         const nameInput = document.querySelector('input[name="name[en]"]');
         const slugInput = document.querySelector('input[name="slug"]');
 
         nameInput.addEventListener('input', function() {
             let slug = this.value.toLowerCase()
                 .replace(/ /g, '-')
-                .replace(/[^\w-]+/g, ''); // remove special characters
+                .replace(/[^\w-]+/g, '');
             slugInput.value = slug;
         });
     </script>

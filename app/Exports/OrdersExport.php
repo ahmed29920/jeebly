@@ -34,6 +34,7 @@ class OrdersExport implements FromCollection, WithHeadings
                     'coupon'                => $order->coupon?->code,
                     'final_total'           => $order->final_total,
                     'shipping_cost'         => $order->shipping_cost,
+                    'service_fee'           => $order->service_fee ?? 0,
                     'billing_address'       => $order->billingAddress
                         ? $order->billingAddress->address . ', ' . $order->billingAddress->city . ', ' . $order->billingAddress->country
                         : '',
@@ -67,6 +68,7 @@ class OrdersExport implements FromCollection, WithHeadings
             'Coupon',
             'Final Total',
             'Shipping Cost',
+            'Service Fee',
             'Billing Address',
             'Shipping Address',
             'Items',

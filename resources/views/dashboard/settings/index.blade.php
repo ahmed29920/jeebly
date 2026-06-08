@@ -122,6 +122,16 @@
                                                placeholder="0.00">
                                         <small class="text-muted d-block mt-1">{{ __('Minimum shipping cost regardless of distance') }}</small>
                                     </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">
+                                            <i class="fas fa-hand-holding-usd text-primary me-2"></i>{{ __('Service Fee') }}
+                                        </label>
+                                        <input type="number" name="service_fee" step="0.01" min="0"
+                                               class="form-control shadow-sm"
+                                               value="{{ old('service_fee', $settings['service_fee'] ?? '0') }}"
+                                               placeholder="0.00">
+                                        <small class="text-muted d-block mt-1">{{ __('Fixed fee added to every order total') }} ({{ currency_symbol() }})</small>
+                                    </div>
                                 </div>
                             </div>
 

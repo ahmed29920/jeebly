@@ -103,6 +103,9 @@ class ProductService
         $data['type'] = $data['type'] ?? 'simple';
         $data = $this->handleTranslations($data);
 
+        release_soft_deleted_unique(Product::class, 'slug', $data['slug'] ?? null);
+        release_soft_deleted_unique(Product::class, 'sku', $data['sku'] ?? null);
+
         $product = DB::transaction(function () use ($data) {
             $product = $this->productRepo->create($data);
             $this->syncCategories($product, $data);
@@ -134,6 +137,9 @@ class ProductService
         $data['type'] = $data['type'] ?? $product->type ?? 'simple';
 
         $data = $this->handleTranslations($data);
+
+        release_soft_deleted_unique(Product::class, 'slug', $data['slug'] ?? null, $product->id);
+        release_soft_deleted_unique(Product::class, 'sku', $data['sku'] ?? null, $product->id);
 
         return DB::transaction(function () use ($data, $product) {
             // Store original type before update to check if we're changing from variable to simple
@@ -348,6 +354,19 @@ class ProductService
 
             // Create/update variants
             foreach ($data['product_variants'] as $variantData) {
+                release_soft_deleted_unique(
+                    \App\Models\ProductVariant::class,
+                    'slug',
+                    $variantData['slug'] ?? null,
+                    $variantData['id'] ?? null
+                );
+                release_soft_deleted_unique(
+                    \App\Models\ProductVariant::class,
+                    'sku',
+                    $variantData['sku'] ?? null,
+                    $variantData['id'] ?? null
+                );
+
                 $variantDataArray = [
                     'name' => $variantData['name'],
                     'slug' => $variantData['slug'],

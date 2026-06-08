@@ -13,7 +13,7 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>Code <span class="text-danger">*</span></label>
-                                <input type="text" name="code" class="form-control" required>
+                                <input type="text" name="code" class="form-control" value="{{ old('code') }}" required>
                             </div>
                         </div>
 
@@ -22,8 +22,8 @@
                                 <label>Discount Type <span class="text-danger">*</span></label>
                                 <select name="type" class="form-control" required>
                                     <option value="">-- Select --</option>
-                                    <option value="percentage">Percent</option>
-                                    <option value="fixed">Fixed</option>
+                                    <option value="percentage" @selected(old('type') === 'percentage')>Percent</option>
+                                    <option value="fixed" @selected(old('type') === 'fixed')>Fixed</option>
                                 </select>
                             </div>
                         </div>
@@ -31,7 +31,7 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>Value <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" name="coupon_discount_value" class="form-control" required>
+                                <input type="number" step="0.01" name="coupon_discount_value" class="form-control" value="{{ old('coupon_discount_value') }}" required>
                             </div>
                         </div>
                     </div>
@@ -40,7 +40,7 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>Usage Limit</label>
-                                <input type="number" name="usage_limit" class="form-control" value="1">
+                                <input type="number" name="usage_limit" class="form-control" value="{{ old('usage_limit', 1) }}">
                             </div>
                         </div>
 
@@ -48,21 +48,21 @@
                             <div class="mb-3">
                                 <label>Minimum Cart Amount</label>
                                 <input type="number" step="0.01" name="min_cart_amount" class="form-control"
-                                    value="0">
+                                    value="{{ old('min_cart_amount', 0) }}">
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>Start Date</label>
-                                <input type="date" name="start_date" class="form-control">
+                                <input type="date" name="start_date" class="form-control" value="{{ old('start_date') }}">
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label>Expires At</label>
-                                <input type="date" name="end_date" class="form-control">
+                                <input type="date" name="end_date" class="form-control" value="{{ old('end_date') }}">
                             </div>
                         </div>
                     </div>
@@ -73,7 +73,7 @@
                         <div class="col-md-4 align-content-center">
                             <div class="form-check pt-3">
                                 <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
-                                    value="1" checked>
+                                    value="1" @checked(old('is_active', true))>
                                 <label class="form-check-label" for="is_active">
                                     Active
                                 </label>
@@ -81,14 +81,13 @@
                         </div>
                     </div>
 
-                    {{-- Optional: Description --}}
                     <div class="mb-3 mt-3">
                         <label>Description En</label>
-                        <textarea name="description[en]" class="form-control" rows="2"></textarea>
+                        <textarea name="description[en]" class="form-control" rows="2">{{ old('description.en') }}</textarea>
                     </div>
                     <div class="mb-3 mt-3">
                         <label>Description Ar</label>
-                        <textarea name="description[ar]" class="form-control" rows="2"></textarea>
+                        <textarea name="description[ar]" class="form-control" rows="2">{{ old('description.ar') }}</textarea>
                     </div>
 
                     <button class="btn btn-primary mt-3" type="submit">Save</button>
@@ -97,18 +96,3 @@
         </div>
     </div>
 @endsection
-{{--
-@push('scripts')
-    <script>
-        // auto-generate code (optional) if user didn’t type
-        const codeInput = document.querySelector('input[name="code"]');
-
-        if (codeInput) {
-            codeInput.addEventListener('focus', function() {
-                if (!this.value) {
-                    this.value = 'CPN-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-                }
-            });
-        }
-    </script>
-@endpush --}}

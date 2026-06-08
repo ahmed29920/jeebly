@@ -59,15 +59,8 @@
                     </div>
                 </div>
 
-                {{-- Totals --}}
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <p>Sub Total: {{ format_currency($order->total) }}</p>
-                        <p>Shipping: {{ format_currency($order->shipping_cost) }}</p>
-                        <p>Discount: {{ format_currency($order->coupon_discount_value) }}</p>
-                        <h5>Grand Total: {{ format_currency($order->final_total) }}</h5>
-                    </div>
-                </div>
+                {{-- Order Summary --}}
+                @include('partials.orders.financial-summary', ['order' => $order])
                 {{-- Note --}}
                 @if($order->note)
                 <div class="card mb-3">
