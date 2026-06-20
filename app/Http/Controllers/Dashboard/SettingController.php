@@ -46,7 +46,13 @@ class SettingController extends Controller
         }
 
         foreach ($data as $key => $value) {
-            Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+            Setting::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => $value,
+                    'type' => Setting::typeForKey($key),
+                ]
+            );
         }
 
         cache()->forget('settings.all');

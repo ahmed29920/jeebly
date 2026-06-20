@@ -279,7 +279,7 @@ class OrderService
             $admins = User::where('role', 'admin')->get();
             // Notification::send($admins, new NewOrderNotification($order));
 
-            return $order->load(['items', 'coupon', 'shippingAddress', 'billingAddress']);
+            return $order->load(['items', 'coupon', 'offer', 'shippingAddress', 'billingAddress']);
         });
     }
 

@@ -47,7 +47,7 @@ class OrderController extends Controller
             $data['note'] ?? null
         );
 
-        return response()->json($order, 201);
+        return (new OrderResource($order))->response()->setStatusCode(201);
     }
 
     public function cancel($id, Request $request)
