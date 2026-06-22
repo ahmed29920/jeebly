@@ -55,6 +55,7 @@ require __DIR__.'/apiAuth.php';
 Route::post('/change-language', [LanguageController::class, 'switch']);
 
 Route::get('/settings', [SettingController::class, 'index']);
+Route::get('/policies', [SettingController::class, 'policies']);
 Route::get('/zones', [ZoneController::class, 'index']);
 
 

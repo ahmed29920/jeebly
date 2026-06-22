@@ -15,7 +15,7 @@ class SettingController extends Controller
     }
     public function update(Request $request)
     {
-        $data = $request->only([
+        $data = $request->only(array_merge([
             'app_name',
             'invitation_discount_points',
             'shipping_cost',
@@ -31,7 +31,7 @@ class SettingController extends Controller
             'max_points_discount_per_order',
             'allow_more_than_one_free_item',
             'allow_branch_admin_to_edit_stock',
-        ]);
+        ], Setting::policySettingKeys()));
 
         $data['allow_order_points'] = $request->has('allow_order_points') ? 1 : 0;
         $data['allow_inviter_order_points'] = $request->has('allow_inviter_order_points') ? 1 : 0;

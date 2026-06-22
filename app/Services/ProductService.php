@@ -48,6 +48,7 @@ class ProductService
             'price_max',
             'attribute_options',
             'sort',
+            'has_discount',
         ]);
 
         // Normalize values

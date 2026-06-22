@@ -103,6 +103,13 @@ class ProductRepository
                 $q->whereIn('attribute_option_id', $optionIds);
             });
         }
+
+        if (isset($filters['has_discount']) && $filters['has_discount'] === true) {
+            $query->where('discount', '>', 0)->orWhereHas('variants', function ($q) {
+                $q->where('discount', '>', 0);
+            });
+        }
+
         if (isset($filters['sort'])) {
             $sort = $filters['sort'];
             switch ($sort) {

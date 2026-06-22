@@ -316,6 +316,44 @@
                                 </div>
                             </div>
 
+                            <hr class="my-4">
+
+                            {{-- Policies Section --}}
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary mb-3">
+                                    <i class="fas fa-file-contract me-2 text-primary"></i>
+                                    {{ __('Policies') }}
+                                </h6>
+                                <p class="text-muted small mb-4">{{ __('Manage legal and informational content shown in the mobile app (English & Arabic).') }}</p>
+
+                                @foreach (\App\Models\Setting::policyDefinitions() as $policyKey => $policyLabel)
+                                    <div class="card border shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0 fw-semibold">{{ __($policyLabel) }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold">{{ __('English') }}</label>
+                                                    <textarea
+                                                        name="{{ $policyKey }}_en"
+                                                        class="form-control policy-editor"
+                                                        rows="8">{{ old($policyKey . '_en', $settings[$policyKey . '_en'] ?? '') }}</textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold">{{ __('Arabic') }}</label>
+                                                    <textarea
+                                                        name="{{ $policyKey }}_ar"
+                                                        class="form-control policy-editor"
+                                                        rows="8"
+                                                        dir="rtl">{{ old($policyKey . '_ar', $settings[$policyKey . '_ar'] ?? '') }}</textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+
                             <div class="mt-4 pt-3 border-top">
                                 <button type="submit" class="btn btn-primary shadow-sm px-4">
                                     <i class="fas fa-save me-2"></i>{{ __('Save Settings') }}
@@ -417,6 +455,25 @@
 
             // Update when method changes
             calculationMethodSelect.addEventListener('change', updateCalculationHelp);
+        }
+
+        if (typeof tinymce !== 'undefined') {
+            tinymce.init({
+                selector: 'textarea.policy-editor',
+                height: 320,
+                menubar: false,
+                plugins: [
+                    'advlist autolink lists link charmap preview anchor',
+                    'searchreplace visualblocks code fullscreen',
+                    'insertdatetime table paste code help wordcount'
+                ],
+                toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | code',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+            });
+
+            document.querySelector('form[action="{{ route('admin.settings.update') }}"]')?.addEventListener('submit', function () {
+                tinymce.triggerSave();
+            });
         }
     </script>
 @endpush
