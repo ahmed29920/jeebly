@@ -43,9 +43,8 @@ use App\Http\Controllers\Api\SocketAuthController;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/socket/authorize', [SocketAuthController::class, 'authorize']);
-});
+Route::post('/socket/authorize', [SocketAuthController::class, 'authorize']);
+
 // Broadcasting authentication route
 Broadcast::routes(['middleware' => ['auth:sanctum']]);
 

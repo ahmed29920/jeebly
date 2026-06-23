@@ -313,6 +313,4 @@ Route::get('websocket-test', function () {
     return view('websocket-test');
 })->name('websocket-test');
 
-
-// // Broadcasting authentication route
-// Broadcast::routes(['middleware' => ['auth:sanctum']]);
+Broadcast::routes(['middleware' => ['web', 'auth']]);

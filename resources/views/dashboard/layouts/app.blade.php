@@ -440,7 +440,7 @@
         });
     </script>
 
-
+    @include('partials.realtime-dashboard')
 
 </body>
 

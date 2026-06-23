@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Events\NewOrderEvent;
 use App\Mail\OrderCreatedMail;
 use App\Models\Address;
 use App\Models\BranchProductStock;
@@ -249,7 +248,7 @@ class OrderService
             $this->cartService->clearCart($userId);
 
             // Events & Notifications
-            // event(new NewOrderEvent($order));
+            RealtimeService::orderCreated($order->fresh(['user', 'branch', 'items']));
 
             // Add Points to User and Inviter
             if (setting('allow_order_points') && ! $usePoints) {

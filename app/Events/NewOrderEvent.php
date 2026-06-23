@@ -3,9 +3,8 @@
 namespace App\Events;
 
 use App\Models\Order;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -14,30 +13,34 @@ class NewOrderEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $order;
+    public function __construct(
+        public Order $order,
+        public array $payload,
+    ) {}
 
-    public function __construct(Order $order)
+    /**
+     * @return array<int, \Illuminate\Broadcasting\Channel>
+     */
+    public function broadcastOn(): array
     {
-        $this->order = $order;
-    }
-
-    public function broadcastOn()
-    {
-        return new Channel('orders'); 
-    }
-
-    public function broadcastAs()
-    {
-        return 'NewOrderEvent'; 
-    }
-
-    public function broadcastWith()
-    {
-        return [
-            'id' => $this->order->id,
-            'customer_name' => $this->order->user->name,
-            'total' => $this->order->final_total,
-            'status' => $this->order->status,
+        $channels = [
+            new PrivateChannel('admin.orders'),
         ];
+
+        if ($this->order->branch_id) {
+            $channels[] = new PrivateChannel('branch.'.$this->order->branch_id.'.orders');
+        }
+
+        return $channels;
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'order.created';
+    }
+
+    public function broadcastWith(): array
+    {
+        return $this->payload;
     }
 }

@@ -43,4 +43,18 @@ class SocketService
     {
         self::emit('notification', array_merge(['type' => $type], $data), "user-{$userId}");
     }
+
+    public static function productCreated(array $data): void
+    {
+        self::emit('product.created', $data, 'catalog');
+    }
+
+    public static function orderCreated(array $data, ?int $branchId = null): void
+    {
+        self::emit('order.created', $data, 'admin-orders');
+
+        if ($branchId) {
+            self::emit('order.created', $data, "branch-{$branchId}-orders");
+        }
+    }
 }

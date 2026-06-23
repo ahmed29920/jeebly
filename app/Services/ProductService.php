@@ -127,6 +127,8 @@ class ProductService
             return $product;
         });
 
+        RealtimeService::productCreated($product->fresh(['images', 'unit', 'categories']));
+
         return $product;
     }
 
