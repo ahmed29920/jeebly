@@ -44,3 +44,10 @@ Broadcast::channel('order-delivery.{orderId}', function ($user, $orderId) {
     return false;
 });
 
+Broadcast::channel('delivery.{deliveryId}', function ($user, $deliveryId) {
+    return $user->delivery?->id == (int) $deliveryId;
+});
+
+Broadcast::channel('user.{userId}.orders', function ($user, $userId) {
+    return (int) $user->id === (int) $userId;
+});

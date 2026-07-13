@@ -49,6 +49,11 @@ class SocketService
         self::emit('product.created', $data, 'catalog');
     }
 
+    public static function productUpdated(array $data): void
+    {
+        self::emit('product.updated', $data, 'catalog');
+    }
+
     public static function orderCreated(array $data, ?int $branchId = null): void
     {
         self::emit('order.created', $data, 'admin-orders');
@@ -56,5 +61,46 @@ class SocketService
         if ($branchId) {
             self::emit('order.created', $data, "branch-{$branchId}-orders");
         }
+    }
+
+    public static function orderUpdated(
+        array $data,
+        ?int $branchId = null,
+        ?int $userId = null,
+        ?int $deliveryId = null,
+        ?int $previousBranchId = null,
+        ?int $previousDeliveryId = null,
+    ): void {
+        self::emit('order.updated', $data, 'admin-orders');
+
+        if ($userId) {
+            self::emit('order.updated', $data, 'user.'.$userId.'.orders');
+        }
+
+        if ($branchId) {
+            self::emit('order.updated', $data, "branch-{$branchId}-orders");
+        }
+
+        if ($previousBranchId && $previousBranchId !== $branchId) {
+            self::emit('order.updated', $data, "branch-{$previousBranchId}-orders");
+        }
+
+        if ($deliveryId) {
+            self::emit('order.updated', $data, 'delivery.'.$deliveryId);
+        }
+
+        if ($previousDeliveryId && $previousDeliveryId !== $deliveryId) {
+            self::emit('order.updated', $data, 'delivery.'.$previousDeliveryId);
+        }
+    }
+
+    public static function productDeleted(array $data): void
+    {
+        self::emit('product.deleted', $data, 'catalog');
+    }
+
+    public static function deliveryOrderAssigned(array $data, int $deliveryId): void
+    {
+        self::emit('delivery.order.assigned', $data, 'delivery.' . $deliveryId);
     }
 }

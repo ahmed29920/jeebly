@@ -363,12 +363,14 @@ class OrderService
                 SendFirebaseNotification::dispatch(
                     $order->user->fcm_token,
                     'Your order status has been updated',
-                    'Your order with id #'.$order->id.' has been updated to '.$data['status'],
-                    ['order_id' => $order->id, 'order_status' => $data['status']]
+                    'Your order with id #'.$order->id.' has been updated to processing',
+                    ['order_id' => $order->id, 'order_status' => 'processing']
                 );
             }
 
             DB::commit();
+
+            RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
 
             return ['success' => true, 'message' => __('messages.invoice_created_successfully')];
         } catch (\Exception $e) {
@@ -400,6 +402,8 @@ class OrderService
 
         $order->status = 'cancelled';
         $order->save();
+
+        RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
 
         return $order;
     }
@@ -481,7 +485,7 @@ class OrderService
             
             
         // Send Firebase notification to user
-        if ($order->user->fcm_token) {
+        if ($order->user->fcm_token && isset($data['status'])) {
             SendFirebaseNotification::dispatch(
                 $order->user->fcm_token,
                 'Your order status has been updated',
@@ -489,6 +493,8 @@ class OrderService
                 ['order_id' => $order->id, 'order_status' => $data['status']]
             );
         }
+
+        RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
 
         return [
             'success' => true,
@@ -550,6 +556,10 @@ class OrderService
         $order->delivery_id = $delivery->id;
         $order->delivery_assigned_at = now();
         $order->save();
+        // realtime show order in delivery app (socket)
+        $order = $order->fresh(['delivery', 'user', 'branch', 'items']);
+        RealtimeService::assignDelivery($order);
+        RealtimeService::orderUpdated($order);
 
         return $order->load(['delivery']);
     }
@@ -562,6 +572,9 @@ class OrderService
                 throw new \Exception(__('messages.order_transfer_pending_only'));
             }
 
+            $previousBranchId = $order->branch_id;
+            $previousDeliveryId = $order->delivery_id;
+
             // Remove delivery assignment if exists
             if ($order->delivery_id) {
                 $order->delivery_id = null;
@@ -571,6 +584,12 @@ class OrderService
             // Set branch_id to null to transfer to admin
             $order->branch_id = null;
             $order->save();
+
+            RealtimeService::orderUpdated(
+                $order->fresh(['user', 'branch', 'items']),
+                $previousBranchId,
+                $previousDeliveryId,
+            );
 
             return [
                 'success' => true,
@@ -601,6 +620,8 @@ class OrderService
             // Assign order to branch
             $order->branch_id = $branchId;
             $order->save();
+
+            RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
 
             return [
                 'success' => true,

@@ -31,7 +31,7 @@
                     </thead>
                     <tbody>
                         @foreach ($orders as $order)
-                            <tr>
+                            <tr data-order-id="{{ $order->id }}">
                                 <td class="align-content-center text-center">{{ $order->id }}</td>
                                 <td class="align-content-center text-center">{{ $order->user->name ?? 'Guest' }}</td>
                                 <td class="align-content-center text-center">{{ format_currency($order->total) }}</td>
@@ -48,9 +48,11 @@
                                                 $badge = 'warning';
                                                 break;
                                             case 'shipped':
+                                            case 'out_for_delivery':
                                                 $badge = 'warning';
                                                 break;
                                             case 'canceled':
+                                            case 'cancelled':
                                                 $badge = 'danger';
                                                 break;
                                             default:
@@ -58,7 +60,7 @@
                                         }
                                     @endphp
                                     <span class="badge bg-{{ $badge }}">
-                                        {{ ucfirst($order->status) }}
+                                        {{ ucfirst(str_replace('_', ' ', $order->status)) }}
                                     </span>
                                 </td>
                                 <td class="align-content-center text-center">
@@ -85,14 +87,5 @@
 @push('scripts')
     <link rel="stylesheet" href="//cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#orders-table').DataTable({
-                dom: '<"top-controls row mb-3"<"col-md-4"l><"col-md-4 text-center bulk-col"><"col-md-4"f>>rtip',
-                sort: false
-            });
-        });
-
-        handleDeleteAjax('.delete-btn', 'Order has been deleted successfully.');
-    </script>
+    @include('partials.realtime-orders-table', ['showBranchColumn' => false])
 @endpush

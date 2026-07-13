@@ -83,6 +83,8 @@ class TransactionService
                     'payment_status' => 'paid'
                 ]);
 
+                RealtimeService::orderUpdated($transaction->order->fresh(['user', 'branch', 'items']));
+
                 return $transaction;
             }
 
@@ -90,6 +92,8 @@ class TransactionService
             $transaction->order->update([
                 'payment_status' => 'failed'
             ]);
+
+            RealtimeService::orderUpdated($transaction->order->fresh(['user', 'branch', 'items']));
 
             abort(402, __('messages.payment_failed'));
         } catch (\Exception $e) {

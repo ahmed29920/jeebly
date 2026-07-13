@@ -144,7 +144,7 @@ class ProductService
         release_soft_deleted_unique(Product::class, 'slug', $data['slug'] ?? null, $product->id);
         release_soft_deleted_unique(Product::class, 'sku', $data['sku'] ?? null, $product->id);
 
-        return DB::transaction(function () use ($data, $product) {
+        $product = DB::transaction(function () use ($data, $product) {
             // Store original type before update to check if we're changing from variable to simple
             $originalType = $product->type ?? 'simple';
             $isChangingToSimple = ($originalType === 'variable' && $data['type'] === 'simple');
@@ -218,12 +218,18 @@ class ProductService
                 }
             }
 
-            return $product->fresh();
+            return $product->fresh(['images', 'unit', 'categories']);
         });
+
+        RealtimeService::productUpdated($product);
+
+        return $product;
     }
 
     public function delete(Product $product)
     {
+        RealtimeService::productDeleted($product);
+
         foreach ($product->images as $img) {
             if (Storage::exists($img->path)) {
                 Storage::delete($img->path);
@@ -292,7 +298,18 @@ class ProductService
 
     public function bulkAction(array $ids, string $action)
     {
-        return $this->productRepo->bulkAction($ids, $action);
+        $result = $this->productRepo->bulkAction($ids, $action);
+
+        if ($action === 'activate') {
+            Product::whereIn('id', $ids)->with(['images', 'unit', 'categories'])->get()
+                ->each(fn (Product $product) => RealtimeService::productUpdated($product));
+        } elseif (in_array($action, ['deactivate', 'delete'], true)) {
+            foreach ($ids as $id) {
+                RealtimeService::productDeleted((int) $id);
+            }
+        }
+
+        return $result;
     }
 
     protected function syncRelations(Product $product, array $data)

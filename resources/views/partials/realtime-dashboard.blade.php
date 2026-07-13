@@ -1,10 +1,19 @@
 @auth
-    @if (config('services.socket.url') && config('services.socket.secret'))
-        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    @php
+        $reverbKey = config('broadcasting.connections.reverb.key');
+        $reverbHost = config('broadcasting.connections.reverb.options.host');
+        $reverbPort = (int) config('broadcasting.connections.reverb.options.port', 443);
+        $reverbScheme = config('broadcasting.connections.reverb.options.scheme', 'https');
+    @endphp
+
+    @if ($reverbKey && $reverbHost)
+        <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
-                const socketUrl = @json(config('services.socket.url'));
-                const socketSecret = @json(config('services.socket.secret'));
+                const REVERB_KEY = @json($reverbKey);
+                const REVERB_HOST = @json($reverbHost);
+                const REVERB_PORT = @json($reverbPort);
+                const forceTLS = @json($reverbScheme === 'https');
                 const userRole = @json(auth()->user()->role);
                 const branchId = @json(auth()->user()->branch_id);
                 const orderShowBase = @json(
@@ -13,27 +22,46 @@
                         : url('/admin/orders')
                 );
                 const currencySymbol = @json(currency_symbol());
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-                if (!socketUrl || !socketSecret) {
-                    return;
+                const pusher = new Pusher(REVERB_KEY, {
+                    wsHost: REVERB_HOST,
+                    wsPort: REVERB_PORT,
+                    wssPort: REVERB_PORT,
+                    forceTLS: forceTLS,
+                    cluster: 'mt1',
+                    disableStats: true,
+                    enabledTransports: ['ws', 'wss'],
+                    authEndpoint: '/broadcasting/auth',
+                    auth: {
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    },
+                });
+
+                const channels = [];
+
+                if (userRole === 'admin' || (userRole === 'employee' && !branchId)) {
+                    channels.push(pusher.subscribe('private-admin.orders'));
                 }
 
-                const socket = io(socketUrl, {
-                    auth: { secret: socketSecret },
-                    transports: ['websocket'],
+                if (branchId) {
+                    channels.push(pusher.subscribe('private-branch.' + branchId + '.orders'));
+                }
+
+                channels.forEach(function (channel) {
+                    channel.bind('order.created', function (data) {
+                        handleOrderCreated(data);
+                    });
+
+                    channel.bind('order.updated', function (data) {
+                        handleOrderUpdated(data);
+                    });
                 });
 
-                socket.on('connect', function () {
-                    if (userRole === 'admin' || (userRole === 'employee' && !branchId)) {
-                        socket.emit('join', 'admin-orders');
-                    }
-
-                    if (branchId) {
-                        socket.emit('join', 'branch-' + branchId + '-orders');
-                    }
-                });
-
-                socket.on('order.created', function (data) {
+                function handleOrderCreated(data) {
                     if (branchId && data.branch_id && Number(data.branch_id) !== Number(branchId)) {
                         return;
                     }
@@ -44,7 +72,19 @@
                     );
 
                     document.dispatchEvent(new CustomEvent('order:created', { detail: data }));
-                });
+                }
+
+                function handleOrderUpdated(data) {
+                    if (branchId) {
+                        const belongsHere = data.branch_id && Number(data.branch_id) === Number(branchId);
+                        document.dispatchEvent(new CustomEvent('order:updated', {
+                            detail: Object.assign({}, data, { _remove: !belongsHere }),
+                        }));
+                        return;
+                    }
+
+                    document.dispatchEvent(new CustomEvent('order:updated', { detail: data }));
+                }
 
                 function appendOrderNotification(order) {
                     const list = document.getElementById('notifications-list');
