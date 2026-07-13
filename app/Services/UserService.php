@@ -172,6 +172,10 @@ class UserService
 
         $this->syncStoredPhoneFormat($user);
 
+        if ($user->role === 'delivery') {
+            $user->load(['delivery.branch', 'delivery.zones']);
+        }
+
         return response()->json([
             'message' => __('messages.user_loged_successfully'),
             'data' => [

@@ -49,5 +49,5 @@ Broadcast::channel('delivery.{deliveryId}', function ($user, $deliveryId) {
 });
 
 Broadcast::channel('user.{userId}.orders', function ($user, $userId) {
-    return (int) $user->id === (int) $userId;
+    return (int) $user->id ===  (int) $userId;
 });
