@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,8 @@ class FirebaseNotificationService
 
         $messaging = Firebase::messaging();
 
-        $message = CloudMessage::withTarget('token', $token)
+        $message = CloudMessage::new()
+            ->toToken($token)
             ->withNotification(Notification::create($title, $body))
             ->withData($this->stringifyData($data));
 
@@ -36,7 +38,8 @@ class FirebaseNotificationService
             }
 
             try {
-                $message = CloudMessage::withTarget('token', $token)
+                $message = CloudMessage::new()
+                    ->toToken($token)
                     ->withNotification(Notification::create($title, $body))
                     ->withData($payload);
 
