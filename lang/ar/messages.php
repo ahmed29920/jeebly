@@ -30,6 +30,10 @@ return [
     'notification_not_found' => 'الإشعار غير موجود.',
     'order_status_updated_title' => 'تم تحديث حالة الطلب',
     'order_status_updated_body' => 'تم تحديث حالة طلبك #:id إلى :status.',
+    'new_order_title' => 'طلب جديد',
+    'new_order_body' => 'طلب جديد #:id من :customer — الإجمالي :total.',
+    'delivery_new_order_title' => 'طلب توصيل جديد',
+    'delivery_new_order_body' => 'تم تعيين الطلب #:id إليك — :customer، الإجمالي :total.',
     'notification_marked_as_read' => 'تم تعليم الإشعار كمقروء.',
     'all_notifications_marked_as_read' => 'تم تعليم جميع الإشعارات كمقروءة.',
 

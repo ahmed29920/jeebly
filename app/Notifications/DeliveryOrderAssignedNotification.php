@@ -6,14 +6,14 @@ use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class NewOrderNotification extends Notification
+class DeliveryOrderAssignedNotification extends Notification
 {
     use Queueable;
 
     public function __construct(
         public readonly Order $order,
-        public readonly string $title = '',
-        public readonly string $body = '',
+        public readonly string $title,
+        public readonly string $body,
     ) {}
 
     public function via(object $notifiable): array
@@ -26,19 +26,19 @@ class NewOrderNotification extends Notification
         return [
             'title' => $this->title,
             'body' => $this->body,
-            'type' => 'new_order',
+            'type' => 'delivery_order_assigned',
             'order_id' => $this->order->id,
             'order_uuid' => $this->order->uuid,
             'customer_name' => $this->order->user?->name,
             'total' => $this->order->final_total,
             'status' => $this->order->status,
-            'branch_id' => $this->order->branch_id,
+            'delivery_id' => $this->order->delivery_id,
             'data' => [
-                'type' => 'new_order',
+                'type' => 'delivery_order_assigned',
                 'order_id' => (string) $this->order->id,
                 'order_uuid' => (string) $this->order->uuid,
                 'order_status' => (string) $this->order->status,
-                'branch_id' => (string) ($this->order->branch_id ?? ''),
+                'delivery_id' => (string) ($this->order->delivery_id ?? ''),
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
             ],
         ];

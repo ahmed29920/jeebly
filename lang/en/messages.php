@@ -30,6 +30,10 @@ return [
     'notification_not_found' => 'Notification not found.',
     'order_status_updated_title' => 'Order status updated',
     'order_status_updated_body' => 'Your order #:id status has been updated to :status.',
+    'new_order_title' => 'New order received',
+    'new_order_body' => 'New order #:id from :customer — total :total.',
+    'delivery_new_order_title' => 'New delivery order',
+    'delivery_new_order_body' => 'Order #:id assigned to you — :customer, total :total.',
     'notification_marked_as_read' => 'Notification marked as read.',
     'all_notifications_marked_as_read' => 'All notifications marked as read.',
 

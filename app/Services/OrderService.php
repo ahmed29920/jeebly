@@ -10,6 +10,7 @@ use App\Models\BranchVariantStock;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Notifications\DeliveryOrderAssignedNotification;
 use App\Notifications\NewOrderNotification;
 use App\Notifications\OrderStatusUpdatedNotification;
 use App\Repositories\OrderRepository;
@@ -250,7 +251,9 @@ class OrderService
             $this->cartService->clearCart($userId);
 
             // Events & Notifications
-            RealtimeService::orderCreated($order->fresh(['user', 'branch', 'items']));
+            $order = $order->fresh(['user', 'branch', 'items']);
+            RealtimeService::orderCreated($order);
+            $this->notifyBranchUsersOfNewOrder($order);
 
             // Add Points to User and Inviter
             if (setting('allow_order_points') && ! $usePoints) {
@@ -276,9 +279,6 @@ class OrderService
             }
 
             // Mail::to($order->user->email)->send(new OrderCreatedMail($order));
-
-            $admins = User::where('role', 'admin')->get();
-            // Notification::send($admins, new NewOrderNotification($order));
 
             return $order->load(['items', 'coupon', 'offer', 'shippingAddress', 'billingAddress']);
         });
@@ -526,6 +526,93 @@ class OrderService
         }
     }
 
+    /**
+     * Send in-app + FCM notification to branch employees for a new order.
+     */
+    protected function notifyBranchUsersOfNewOrder(Order $order): void
+    {
+        if (! $order->branch_id) {
+            return;
+        }
+
+        $employees = User::query()
+            ->where('role', 'employee')
+            ->where('branch_id', $order->branch_id)
+            ->get();
+
+        if ($employees->isEmpty()) {
+            return;
+        }
+
+        $title = __('messages.new_order_title');
+        $body = __('messages.new_order_body', [
+            'id' => $order->id,
+            'customer' => $order->user?->name ?? '-',
+            'total' => $order->final_total,
+        ]);
+
+        $data = [
+            'type' => 'new_order',
+            'order_id' => (string) $order->id,
+            'order_uuid' => (string) $order->uuid,
+            'order_status' => (string) $order->status,
+            'branch_id' => (string) $order->branch_id,
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+        ];
+
+        $tokens = [];
+
+        foreach ($employees as $employee) {
+            $employee->notify(new NewOrderNotification($order, $title, $body));
+
+            if (! empty($employee->fcm_token)) {
+                $tokens[] = $employee->fcm_token;
+            }
+        }
+
+        if (count($tokens) > 0) {
+            app(FirebaseNotificationService::class)->sendToTokens($tokens, $title, $body, $data);
+        }
+    }
+
+    /**
+     * Send in-app + FCM notification to the assigned delivery driver.
+     */
+    protected function notifyDeliveryOfNewOrder(Order $order): void
+    {
+        $deliveryUser = $order->delivery?->user;
+        if (! $deliveryUser) {
+            return;
+        }
+
+        $title = __('messages.delivery_new_order_title');
+        $body = __('messages.delivery_new_order_body', [
+            'id' => $order->id,
+            'customer' => $order->user?->name ?? '-',
+            'total' => $order->final_total,
+        ]);
+
+        $data = [
+            'type' => 'delivery_order_assigned',
+            'order_id' => (string) $order->id,
+            'order_uuid' => (string) $order->uuid,
+            'order_status' => (string) $order->status,
+            'delivery_id' => (string) ($order->delivery_id ?? ''),
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+        ];
+
+        $deliveryUser->notify(new DeliveryOrderAssignedNotification($order, $title, $body));
+
+        if (! empty($deliveryUser->fcm_token)) {
+            SendFirebaseNotification::dispatchSync(
+                $deliveryUser->fcm_token,
+                $title,
+                $body,
+                $data,
+            );
+        }
+    }
+
     public function storeComment(Order $order, $data)
     {
         try {
@@ -580,8 +667,9 @@ class OrderService
         $order->delivery_id = $delivery->id;
         $order->delivery_assigned_at = now();
         $order->save();
-        // realtime show order in delivery app (socket)
-        $order = $order->fresh(['delivery', 'user', 'branch', 'items']);
+
+        $order = $order->fresh(['delivery.user', 'user', 'branch', 'items']);
+        $this->notifyDeliveryOfNewOrder($order);
         RealtimeService::assignDelivery($order);
         RealtimeService::orderUpdated($order);
 
@@ -645,7 +733,9 @@ class OrderService
             $order->branch_id = $branchId;
             $order->save();
 
-            RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
+            $order = $order->fresh(['user', 'branch', 'items']);
+            $this->notifyBranchUsersOfNewOrder($order);
+            RealtimeService::orderUpdated($order);
 
             return [
                 'success' => true,
