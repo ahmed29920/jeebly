@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendFirebaseNotification;
 use App\Mail\OrderCreatedMail;
 use App\Models\Address;
 use App\Models\BranchProductStock;
