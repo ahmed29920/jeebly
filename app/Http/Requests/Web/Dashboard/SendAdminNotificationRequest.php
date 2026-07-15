@@ -14,26 +14,62 @@ class SendAdminNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'recipient_type' => 'required|string|in:users,branches,deliveries',
             'audience' => 'required|string|in:all,selected',
             'user_ids' => 'nullable|array',
             'user_ids.*' => 'integer|exists:users,id',
-
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'integer|exists:branches,id',
+            'delivery_ids' => 'nullable|array',
+            'delivery_ids.*' => 'integer|exists:deliveries,id',
+            'send_in_app' => 'nullable|boolean',
+            'send_push' => 'nullable|boolean',
             'title' => 'required|string|max:150',
             'body' => 'required|string|max:1000',
             'data_json' => 'nullable|string',
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'send_in_app' => $this->boolean('send_in_app'),
+            'send_push' => $this->boolean('send_push'),
+        ]);
+    }
+
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
             $audience = (string) $this->input('audience');
-            $userIds = $this->input('user_ids');
+            $recipientType = (string) $this->input('recipient_type');
 
             if ($audience === 'selected') {
-                if (!is_array($userIds) || count($userIds) === 0) {
-                    $validator->errors()->add('user_ids', __('Please select at least one user.'));
+                $ids = match ($recipientType) {
+                    'branches' => $this->input('branch_ids'),
+                    'deliveries' => $this->input('delivery_ids'),
+                    default => $this->input('user_ids'),
+                };
+
+                $field = match ($recipientType) {
+                    'branches' => 'branch_ids',
+                    'deliveries' => 'delivery_ids',
+                    default => 'user_ids',
+                };
+
+                $message = match ($recipientType) {
+                    'branches' => __('Please select at least one branch.'),
+                    'deliveries' => __('Please select at least one delivery.'),
+                    default => __('Please select at least one user.'),
+                };
+
+                if (!is_array($ids) || count($ids) === 0) {
+                    $validator->errors()->add($field, $message);
                 }
+            }
+
+            if (!$this->boolean('send_in_app') && !$this->boolean('send_push')) {
+                $validator->errors()->add('send_in_app', __('Select at least one channel: in-app or push.'));
             }
 
             $dataJson = $this->input('data_json');
@@ -46,4 +82,3 @@ class SendAdminNotificationRequest extends FormRequest
         });
     }
 }
-

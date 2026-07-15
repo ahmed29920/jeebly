@@ -2,6 +2,8 @@
 
 @php
     $page = 'notifications';
+    $oldRecipient = old('recipient_type', 'users');
+    $oldAudience = old('audience', 'selected');
 @endphp
 
 @section('title', __('Send Notification'))
@@ -18,7 +20,7 @@
                     </ol>
                 </nav>
                 <h1 class="h3 mb-0">{{ __('Send Notification') }}</h1>
-                <p class="text-muted mb-0">{{ __('Send a push notification (Firebase) and save it in the database.') }}</p>
+                <p class="text-muted mb-0">{{ __('Send FCM push and/or in-app notifications to users, branch staff, or deliveries.') }}</p>
             </div>
         </div>
 
@@ -33,17 +35,41 @@
                             @csrf
 
                             <div class="mb-4">
+                                <label class="form-label">{{ __('Recipient type') }} *</label>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="recipient_type" id="type_users" value="users"
+                                            {{ $oldRecipient === 'users' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="type_users">{{ __('Users') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="recipient_type" id="type_branches" value="branches"
+                                            {{ $oldRecipient === 'branches' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="type_branches">{{ __('Branches') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="recipient_type" id="type_deliveries" value="deliveries"
+                                            {{ $oldRecipient === 'deliveries' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="type_deliveries">{{ __('Deliveries') }}</label>
+                                    </div>
+                                </div>
+                                @error('recipient_type')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-4">
                                 <label class="form-label">{{ __('Audience') }} *</label>
                                 <div class="d-flex flex-wrap gap-4">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="audience" id="audience_all" value="all"
-                                            {{ old('audience', 'selected') === 'all' ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="audience_all">{{ __('All users') }}</label>
+                                            {{ $oldAudience === 'all' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="audience_all" id="audience_all_label">{{ __('All users') }}</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="audience" id="audience_selected" value="selected"
-                                            {{ old('audience', 'selected') === 'selected' ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="audience_selected">{{ __('Selected users') }}</label>
+                                            {{ $oldAudience === 'selected' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="audience_selected" id="audience_selected_label">{{ __('Selected users') }}</label>
                                     </div>
                                 </div>
                                 @error('audience')
@@ -51,24 +77,19 @@
                                 @enderror
                             </div>
 
-                            <div class="mb-4" id="selected-users-wrapper">
+                            <div class="mb-4 selection-wrapper" id="selected-users-wrapper" data-type="users">
                                 <label class="form-label">{{ __('Users') }}</label>
                                 <p class="text-muted small mb-2">{{ __('Choose one or more users to notify.') }}</p>
-                                <input
-                                    type="text"
-                                    id="users-search"
-                                    class="form-control mb-2"
-                                    placeholder="{{ __('Search by name or phone...') }}"
-                                    autocomplete="off"
-                                >
-                                <select name="user_ids[]" class="form-select" multiple id="users-select">
+                                <input type="text" id="users-search" class="form-control mb-2"
+                                    placeholder="{{ __('Search by name or phone...') }}" autocomplete="off">
+                                <select name="user_ids[]" class="form-select" multiple id="users-select" size="8">
                                     @foreach(($users ?? collect()) as $user)
                                         @php
                                             $label = trim(($user->name ?? '') . ' - ' . ($user->phone ?? $user->email ?? ''));
                                         @endphp
                                         <option value="{{ $user->id }}"
                                             data-search="{{ mb_strtolower(($user->name ?? '') . ' ' . ($user->phone ?? '') . ' ' . ($user->email ?? ''), 'UTF-8') }}"
-                                            {{ in_array($user->id, old('user_ids', []), true) ? 'selected' : '' }}>
+                                            {{ in_array($user->id, old('user_ids', []), false) ? 'selected' : '' }}>
                                             {{ $label }}
                                         </option>
                                     @endforeach
@@ -76,7 +97,74 @@
                                 @error('user_ids')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
-                                @error('user_ids.*')
+                            </div>
+
+                            <div class="mb-4 selection-wrapper" id="selected-branches-wrapper" data-type="branches">
+                                <label class="form-label">{{ __('Branches') }}</label>
+                                <p class="text-muted small mb-2">{{ __('Notify all employees of the selected branches.') }}</p>
+                                <input type="text" id="branches-search" class="form-control mb-2"
+                                    placeholder="{{ __('Search branches...') }}" autocomplete="off">
+                                <select name="branch_ids[]" class="form-select" multiple id="branches-select" size="8">
+                                    @foreach(($branches ?? collect()) as $branch)
+                                        @php
+                                            $branchName = $branch->getTranslation('name', app()->getLocale())
+                                                ?: $branch->getTranslation('name', 'en');
+                                        @endphp
+                                        <option value="{{ $branch->id }}"
+                                            data-search="{{ mb_strtolower($branchName, 'UTF-8') }}"
+                                            {{ in_array($branch->id, old('branch_ids', []), false) ? 'selected' : '' }}>
+                                            {{ $branchName }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('branch_ids')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-4 selection-wrapper" id="selected-deliveries-wrapper" data-type="deliveries">
+                                <label class="form-label">{{ __('Deliveries') }}</label>
+                                <p class="text-muted small mb-2">{{ __('Choose one or more delivery drivers to notify.') }}</p>
+                                <input type="text" id="deliveries-search" class="form-control mb-2"
+                                    placeholder="{{ __('Search by name or phone...') }}" autocomplete="off">
+                                <select name="delivery_ids[]" class="form-select" multiple id="deliveries-select" size="8">
+                                    @foreach(($deliveries ?? collect()) as $delivery)
+                                        @php
+                                            $dUser = $delivery->user;
+                                            $label = trim(($dUser->name ?? '') . ' - ' . ($dUser->phone ?? $dUser->email ?? '') . ' (#' . $delivery->id . ')');
+                                        @endphp
+                                        <option value="{{ $delivery->id }}"
+                                            data-search="{{ mb_strtolower(($dUser->name ?? '') . ' ' . ($dUser->phone ?? '') . ' ' . ($dUser->email ?? ''), 'UTF-8') }}"
+                                            {{ in_array($delivery->id, old('delivery_ids', []), false) ? 'selected' : '' }}>
+                                            {{ $label }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('delivery_ids')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">{{ __('Channels') }} *</label>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        <input type="hidden" name="send_in_app" value="0">
+                                        <input class="form-check-input" type="checkbox" name="send_in_app" id="send_in_app" value="1"
+                                            {{ (string) old('send_in_app', '1') === '1' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="send_in_app">{{ __('In-app notification') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="hidden" name="send_push" value="0">
+                                        <input class="form-check-input" type="checkbox" name="send_push" id="send_push" value="1"
+                                            {{ (string) old('send_push', '1') === '1' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="send_push">{{ __('FCM push') }}</label>
+                                    </div>
+                                </div>
+                                @error('send_in_app')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                @error('send_push')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -134,9 +222,11 @@
                     </div>
                     <div class="card-body">
                         <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><strong>{{ __('Database') }}:</strong> {{ __('Saved to the user notifications list.') }}</li>
-                            <li class="mb-2"><strong>{{ __('Firebase') }}:</strong> {{ __('Sent only to users with an FCM token.') }}</li>
-                            <li class="mb-2"><strong>{{ __('Audience') }}:</strong> {{ __('When sending to all users, this may take some time.') }}</li>
+                            <li class="mb-2"><strong>{{ __('Users') }}:</strong> {{ __('App customers.') }}</li>
+                            <li class="mb-2"><strong>{{ __('Branches') }}:</strong> {{ __('Employees of the selected branches.') }}</li>
+                            <li class="mb-2"><strong>{{ __('Deliveries') }}:</strong> {{ __('Delivery drivers.') }}</li>
+                            <li class="mb-2"><strong>{{ __('In-app') }}:</strong> {{ __('Saved to the recipients notifications list.') }}</li>
+                            <li class="mb-2"><strong>{{ __('FCM') }}:</strong> {{ __('Sent only to recipients with an FCM token.') }}</li>
                         </ul>
                     </div>
                 </div>
@@ -149,38 +239,73 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const all = document.getElementById('audience_all');
-        const selected = document.getElementById('audience_selected');
-        const wrapper = document.getElementById('selected-users-wrapper');
-        const searchInput = document.getElementById('users-search');
-        const usersSelect = document.getElementById('users-select');
+        const typeInputs = document.querySelectorAll('input[name="recipient_type"]');
+        const audienceAll = document.getElementById('audience_all');
+        const audienceSelected = document.getElementById('audience_selected');
+        const allLabel = document.getElementById('audience_all_label');
+        const selectedLabel = document.getElementById('audience_selected_label');
+        const wrappers = document.querySelectorAll('.selection-wrapper');
 
-        function update() {
-            const isSelected = selected && selected.checked;
-            if (wrapper) wrapper.style.display = isSelected ? '' : 'none';
+        const labels = {
+            users: {
+                all: @json(__('All users')),
+                selected: @json(__('Selected users')),
+            },
+            branches: {
+                all: @json(__('All branches')),
+                selected: @json(__('Selected branches')),
+            },
+            deliveries: {
+                all: @json(__('All deliveries')),
+                selected: @json(__('Selected deliveries')),
+            },
+        };
+
+        function currentType() {
+            const checked = document.querySelector('input[name="recipient_type"]:checked');
+            return checked ? checked.value : 'users';
+        }
+
+        function updateUi() {
+            const type = currentType();
+            const isSelected = audienceSelected && audienceSelected.checked;
+
+            if (allLabel && labels[type]) allLabel.textContent = labels[type].all;
+            if (selectedLabel && labels[type]) selectedLabel.textContent = labels[type].selected;
+
+            wrappers.forEach(wrapper => {
+                const match = wrapper.dataset.type === type && isSelected;
+                wrapper.style.display = match ? '' : 'none';
+            });
         }
 
         function normalize(str) {
             return (str || '').toString().toLowerCase().trim();
         }
 
-        function filterUsers() {
-            if (!usersSelect || !searchInput) return;
-            const q = normalize(searchInput.value);
+        function bindSearch(inputId, selectId) {
+            const searchInput = document.getElementById(inputId);
+            const select = document.getElementById(selectId);
+            if (!searchInput || !select) return;
 
-            Array.from(usersSelect.options).forEach(opt => {
-                const hay = normalize(opt.dataset.search || opt.text);
-                const match = q === '' || hay.includes(q);
-                opt.hidden = !match;
+            searchInput.addEventListener('input', function () {
+                const q = normalize(searchInput.value);
+                Array.from(select.options).forEach(opt => {
+                    const hay = normalize(opt.dataset.search || opt.text);
+                    opt.hidden = !(q === '' || hay.includes(q));
+                });
             });
         }
 
-        if (all) all.addEventListener('change', update);
-        if (selected) selected.addEventListener('change', update);
-        if (searchInput) searchInput.addEventListener('input', filterUsers);
-        update();
-        filterUsers();
+        typeInputs.forEach(input => input.addEventListener('change', updateUi));
+        if (audienceAll) audienceAll.addEventListener('change', updateUi);
+        if (audienceSelected) audienceSelected.addEventListener('change', updateUi);
+
+        bindSearch('users-search', 'users-select');
+        bindSearch('branches-search', 'branches-select');
+        bindSearch('deliveries-search', 'deliveries-select');
+
+        updateUi();
     });
 </script>
 @endpush
-

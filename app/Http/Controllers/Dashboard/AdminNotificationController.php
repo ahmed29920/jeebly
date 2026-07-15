@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Web\Dashboard\SendAdminNotificationRequest;
+use App\Models\Branch;
+use App\Models\Delivery;
 use App\Models\User;
 use App\Services\AdminNotificationService;
 use Illuminate\Http\RedirectResponse;
@@ -26,15 +28,33 @@ class AdminNotificationController extends Controller
             ->limit(5000)
             ->get();
 
-        return view('dashboard.notifications.create', compact('users'));
+        $branches = Branch::query()
+            ->orderByDesc('id')
+            ->get(['id', 'name']);
+
+        $deliveries = Delivery::query()
+            ->with(['user:id,name,phone,email'])
+            ->orderByDesc('id')
+            ->limit(5000)
+            ->get();
+
+        return view('dashboard.notifications.create', compact('users', 'branches', 'deliveries'));
     }
 
     public function store(SendAdminNotificationRequest $request): RedirectResponse
     {
         $validated = $request->validated();
 
+        $recipientType = (string) $validated['recipient_type'];
         $audience = (string) $validated['audience'];
-        $userIds = array_values(array_filter($validated['user_ids'] ?? [], fn ($v) => $v !== null && $v !== ''));
+        $sendInApp = (bool) ($validated['send_in_app'] ?? false);
+        $sendPush = (bool) ($validated['send_push'] ?? false);
+
+        $ids = match ($recipientType) {
+            'branches' => array_values(array_filter($validated['branch_ids'] ?? [], fn ($v) => $v !== null && $v !== '')),
+            'deliveries' => array_values(array_filter($validated['delivery_ids'] ?? [], fn ($v) => $v !== null && $v !== '')),
+            default => array_values(array_filter($validated['user_ids'] ?? [], fn ($v) => $v !== null && $v !== '')),
+        };
 
         $data = [];
         $dataJson = $validated['data_json'] ?? null;
@@ -43,8 +63,10 @@ class AdminNotificationController extends Controller
             $data = is_array($decoded) ? $decoded : [];
         }
 
-        // Helpful default for Flutter clients, if not provided.
-        $data += ['click_action' => 'FLUTTER_NOTIFICATION_CLICK'];
+        $data += [
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            'recipient_type' => $recipientType,
+        ];
 
         $title = (string) $validated['title'];
         $body = (string) $validated['body'];
@@ -52,14 +74,25 @@ class AdminNotificationController extends Controller
 
         $dbCount = 0;
         $pushCount = 0;
+        $recipientCount = 0;
 
         $buffer = new Collection();
         $bufferSize = 200;
 
-        foreach ($this->service->usersByAudience($audience, $userIds) as $user) {
+        foreach ($this->service->recipientsByAudience($recipientType, $audience, $ids) as $user) {
             $buffer->push($user);
+            $recipientCount++;
+
             if ($buffer->count() >= $bufferSize) {
-                $result = $this->service->sendToUsers($buffer, $title, $body, $data, $sentByUserId);
+                $result = $this->service->sendToUsers(
+                    $buffer,
+                    $title,
+                    $body,
+                    $data,
+                    $sentByUserId,
+                    $sendInApp,
+                    $sendPush,
+                );
                 $dbCount += $result['database'];
                 $pushCount += $result['push'];
                 $buffer = new Collection();
@@ -67,15 +100,27 @@ class AdminNotificationController extends Controller
         }
 
         if ($buffer->count() > 0) {
-            $result = $this->service->sendToUsers($buffer, $title, $body, $data, $sentByUserId);
+            $result = $this->service->sendToUsers(
+                $buffer,
+                $title,
+                $body,
+                $data,
+                $sentByUserId,
+                $sendInApp,
+                $sendPush,
+            );
             $dbCount += $result['database'];
             $pushCount += $result['push'];
         }
 
-        return back()->with('success', __('Notification sent. Database: :db, Push: :push', [
+        if ($recipientCount === 0) {
+            return back()->withInput()->with('error', __('No recipients found for the selected audience.'));
+        }
+
+        return back()->with('success', __('Notification sent to :count recipient(s). In-app: :db, Push: :push', [
+            'count' => $recipientCount,
             'db' => $dbCount,
             'push' => $pushCount,
         ]));
     }
 }
-
