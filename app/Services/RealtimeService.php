@@ -26,7 +26,6 @@ class RealtimeService
         ];
 
         event(new ProductCreated($product, $payload));
-        SocketService::productCreated($payload);
     }
 
     public static function orderCreated(Order $order): void
@@ -36,7 +35,6 @@ class RealtimeService
         $payload = self::orderPayload($order);
 
         event(new NewOrderEvent($order, $payload));
-        SocketService::orderCreated($payload, $order->branch_id);
     }
 
     public static function orderUpdated(
@@ -49,14 +47,6 @@ class RealtimeService
         $payload = self::orderPayload($order);
 
         event(new OrderUpdated($order, $payload, $previousBranchId, $previousDeliveryId));
-        SocketService::orderUpdated(
-            $payload,
-            $order->branch_id,
-            $order->user_id,
-            $order->delivery_id,
-            $previousBranchId,
-            $previousDeliveryId,
-        );
     }
 
     public static function productPayload(Product $product): array
@@ -110,7 +100,6 @@ class RealtimeService
         ];
 
         event(new ProductUpdated($product, $payload));
-        SocketService::productUpdated($payload);
     }
 
     public static function productDeleted(Product|int $product): void
@@ -124,7 +113,6 @@ class RealtimeService
         ];
 
         event(new ProductDeleted($product instanceof Product ? $product : $productId, $payload));
-        SocketService::productDeleted($payload);
     }
 
     public static function assignDelivery(Order $order): void
@@ -134,6 +122,5 @@ class RealtimeService
         $payload = self::orderPayload($order);
 
         event(new AssignDeliveryEvent($order, $payload));
-        SocketService::deliveryOrderAssigned($payload, $order->delivery_id);
     }
 }

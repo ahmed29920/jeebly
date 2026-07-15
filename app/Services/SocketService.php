@@ -9,8 +9,14 @@ class SocketService
 {
     public static function emit(string $event, array $data, ?string $room = null): void
     {
+        $baseUrl = rtrim((string) config('services.socket.url'), '/');
+
+        if ($baseUrl === '') {
+            return;
+        }
+
         try {
-            Http::post(config('services.socket.url') . '/emit', [
+            Http::timeout(5)->post($baseUrl . '/emit', [
                 'secret' => config('services.socket.secret'),
                 'event'  => $event,
                 'room'   => $room,
