@@ -28,6 +28,8 @@ return [
 
     // Notifications
     'notification_not_found' => 'الإشعار غير موجود.',
+    'order_status_updated_title' => 'تم تحديث حالة الطلب',
+    'order_status_updated_body' => 'تم تحديث حالة طلبك #:id إلى :status.',
     'notification_marked_as_read' => 'تم تعليم الإشعار كمقروء.',
     'all_notifications_marked_as_read' => 'تم تعليم جميع الإشعارات كمقروءة.',
 

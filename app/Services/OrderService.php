@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
+use App\Notifications\OrderStatusUpdatedNotification;
 use App\Repositories\OrderRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -358,20 +359,12 @@ class OrderService
 
             $order->status = 'processing';
             $order->save();
-            
-            // Send Firebase notification to user
-            if ($order->user->fcm_token) {
-                SendFirebaseNotification::dispatch(
-                    $order->user->fcm_token,
-                    'Your order status has been updated',
-                    'Your order with id #'.$order->id.' has been updated to processing',
-                    ['order_id' => $order->id, 'order_status' => 'processing']
-                );
-            }
 
             DB::commit();
 
-            RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
+            $order = $order->fresh(['user', 'branch', 'items']);
+            $this->notifyOrderUserStatusChange($order, 'processing');
+            RealtimeService::orderUpdated($order);
 
             return ['success' => true, 'message' => __('messages.invoice_created_successfully')];
         } catch (\Exception $e) {
@@ -404,7 +397,9 @@ class OrderService
         $order->status = 'cancelled';
         $order->save();
 
-        RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
+        $order = $order->fresh(['user', 'branch', 'items']);
+        $this->notifyOrderUserStatusChange($order, 'cancelled');
+        RealtimeService::orderUpdated($order);
 
         return $order;
     }
@@ -478,29 +473,57 @@ class OrderService
             throw new \Exception(__('messages.order_update_unauthorized'));
         }
 
-
+        $previousStatus = $order->status;
         $order->update($data);
 
-        // Mail::to($order->user->email)
-        //     ->send(new \App\Mail\OrderStatusUpdatedMail($order));
-            
-            
-        // Send Firebase notification to user
-        if ($order->user->fcm_token && isset($data['status'])) {
-            SendFirebaseNotification::dispatch(
-                $order->user->fcm_token,
-                'Your order status has been updated',
-                'Your order with id #'.$order->id.' has been updated to '.$data['status'],
-                ['order_id' => $order->id, 'order_status' => $data['status']]
-            );
+        $order = $order->fresh(['user', 'branch', 'items']);
+
+        if (isset($data['status']) && $data['status'] !== $previousStatus) {
+            $this->notifyOrderUserStatusChange($order, (string) $data['status']);
         }
 
-        RealtimeService::orderUpdated($order->fresh(['user', 'branch', 'items']));
+        RealtimeService::orderUpdated($order);
 
         return [
             'success' => true,
             'message' => __('messages.order_updated_successfully'),
         ];
+    }
+
+    /**
+     * Send in-app + FCM notification to the order customer when status changes.
+     */
+    protected function notifyOrderUserStatusChange(Order $order, string $status): void
+    {
+        $user = $order->user;
+        if (! $user) {
+            return;
+        }
+
+        $title = __('messages.order_status_updated_title');
+        $body = __('messages.order_status_updated_body', [
+            'id' => $order->id,
+            'status' => $status,
+        ]);
+
+        $data = [
+            'type' => 'order_status_updated',
+            'order_id' => (string) $order->id,
+            'order_uuid' => (string) $order->uuid,
+            'order_status' => $status,
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+        ];
+
+        $user->notify(new OrderStatusUpdatedNotification($order, $status, $title, $body));
+
+        if (! empty($user->fcm_token)) {
+            SendFirebaseNotification::dispatchSync(
+                $user->fcm_token,
+                $title,
+                $body,
+                $data,
+            );
+        }
     }
 
     public function storeComment(Order $order, $data)

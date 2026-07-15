@@ -28,6 +28,8 @@ return [
 
     // Notifications
     'notification_not_found' => 'Notification not found.',
+    'order_status_updated_title' => 'Order status updated',
+    'order_status_updated_body' => 'Your order #:id status has been updated to :status.',
     'notification_marked_as_read' => 'Notification marked as read.',
     'all_notifications_marked_as_read' => 'All notifications marked as read.',
 
