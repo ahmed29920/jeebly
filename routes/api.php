@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\Branch\DeliveryController as BranchDeliveryControll
 use App\Http\Controllers\Api\Delivery\DeliveryController as DeliveryController;
 use App\Http\Controllers\Api\Delivery\LocationController as DeliveryLocationController;
 use App\Http\Controllers\Api\Delivery\OrderController as DeliveryOrderController;
+use App\Http\Controllers\Api\Delivery\WalletRequestController as DeliveryWalletRequestController;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
@@ -205,6 +206,11 @@ Route::group(['middleware' => ['auth:sanctum', 'locale', 'role:delivery'], 'pref
 
     // wallet history
     Route::get('wallet-history', [DeliveryOrderController::class, 'walletHistory']);
+
+    // wallet requests (withdrawal & COD settlement)
+    Route::get('wallet-requests', [DeliveryWalletRequestController::class, 'index']);
+    Route::get('settleable-orders', [DeliveryWalletRequestController::class, 'settleableOrders']);
+    Route::post('wallet-requests', [DeliveryWalletRequestController::class, 'store']);
 
     // set online
     Route::post('set-online', [DeliveryController::class, 'setOnline']);

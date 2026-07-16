@@ -23,6 +23,7 @@ use App\Http\Controllers\Dashboard\EmployeeController;
 use App\Http\Controllers\Dashboard\BookingListController;
 use App\Http\Controllers\Dashboard\SliderController;
 use App\Http\Controllers\Dashboard\DeliveryController;
+use App\Http\Controllers\Dashboard\DeliveryWalletRequestController;
 use App\Http\Controllers\Dashboard\ZoneController;
 use App\Services\SocketService;
 
@@ -213,6 +214,8 @@ Route::prefix('admin')->as('admin.')->middleware('locale')->group(function () {
         Route::group(['middleware' => ['role_or_permission:admin|Deliveries']], function () {
             Route::resource('deliveries', DeliveryController::class);
             Route::post('bulk-deliveries', [DeliveryController::class, 'bulk'])->name('deliveries.bulk');
+            Route::get('delivery-wallet-requests', [DeliveryWalletRequestController::class, 'index'])->name('delivery-wallet-requests.index');
+            Route::patch('delivery-wallet-requests/{deliveryWalletRequest}', [DeliveryWalletRequestController::class, 'update'])->name('delivery-wallet-requests.update');
         });
 
         # zones

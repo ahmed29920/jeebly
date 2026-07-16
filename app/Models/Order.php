@@ -115,6 +115,12 @@ class Order extends Model
             'phone' => 'No Delivery Assigned',
         ]);
     }
+
+    public function walletSettlementRequests()
+    {
+        return $this->hasMany(DeliveryWalletRequest::class, 'order_id')
+            ->where('type', 'settlement');
+    }
     /*
     |--------------------------------------------------------------------------
     | Accessors

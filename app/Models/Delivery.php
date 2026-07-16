@@ -88,6 +88,11 @@ class Delivery extends Model
         return $this->hasMany(DeliveryWalletHistory::class);
     }
 
+    public function walletRequests()
+    {
+        return $this->hasMany(DeliveryWalletRequest::class);
+    }
+
     /**
      * Zones that this delivery can cover.
      */

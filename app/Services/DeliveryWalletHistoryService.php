@@ -35,4 +35,29 @@ class DeliveryWalletHistoryService
             'notes'          => 'Payment for completed order #' . $order->id,
         ]);
     }
+
+    public function recordDebit($delivery, $amount, $notes, $orderId = null)
+    {
+        $delivery->refresh();
+
+        $walletBefore = $delivery->wallet ?? 0;
+
+        if ($amount > $walletBefore) {
+            throw new \InvalidArgumentException(__('messages.insufficient_wallet_balance'));
+        }
+
+        $walletAfter = $walletBefore - $amount;
+
+        $delivery->decrement('wallet', $amount);
+
+        DeliveryWalletHistory::create([
+            'delivery_id'   => $delivery->id,
+            'order_id'      => $orderId,
+            'amount'        => $amount,
+            'type'          => 'debit',
+            'wallet_before' => $walletBefore,
+            'wallet_after'  => $walletAfter,
+            'notes'         => $notes,
+        ]);
+    }
 }

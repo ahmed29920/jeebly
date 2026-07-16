@@ -8,7 +8,7 @@ if (! function_exists('setting')) {
     {
         static $settings = null;
 
-        if ($settings === null) {
+        if ($settings == null) {
             $settings = cache()->rememberForever('settings.all', function () {
                 return Setting::pluck('value', 'key')->toArray();
             });
@@ -47,13 +47,13 @@ if (! function_exists('normalize_phone')) {
      */
     function normalize_phone(?string $phone): ?string
     {
-        if ($phone === null || trim($phone) === '') {
+        if ($phone == null || trim($phone) == '') {
             return $phone;
         }
 
         $digits = preg_replace('/\D+/', '', trim($phone)) ?? '';
 
-        if ($digits === '') {
+        if ($digits == '') {
             return trim($phone);
         }
 
@@ -65,7 +65,7 @@ if (! function_exists('normalize_phone')) {
             $digits = substr($digits, 3);
         }
 
-        if (str_starts_with($digits, '7') && strlen($digits) === 10) {
+        if (str_starts_with($digits, '7') && strlen($digits) == 10) {
             $digits = '0' . $digits;
         }
 
@@ -84,7 +84,7 @@ if (! function_exists('phone_lookup_variants')) {
         $original = $phone !== null ? trim($phone) : '';
         $normalized = normalize_phone($phone);
 
-        if ($normalized === null || $normalized === '') {
+        if ($normalized == null || $normalized == '') {
             return $original !== '' ? [$original] : [];
         }
 
@@ -118,7 +118,7 @@ if (! function_exists('format_phone_international')) {
      */
     function format_phone_international(?string $phone): ?string
     {
-        if ($phone === null || trim($phone) === '') {
+        if ($phone == null || trim($phone) == '') {
             return $phone;
         }
 
@@ -130,7 +130,7 @@ if (! function_exists('format_phone_international')) {
 
         $normalized = normalize_phone($phone);
 
-        if ($normalized === null || $normalized === '') {
+        if ($normalized == null || $normalized == '') {
             return $trimmed;
         }
 
@@ -153,7 +153,7 @@ if (! function_exists('arabic_pdf')) {
     function arabic_pdf(?string $text): string
     {
         $text = (string) ($text ?? '');
-        if ($text === '') {
+        if ($text == '') {
             return '';
         }
 
@@ -194,7 +194,7 @@ if (! function_exists('release_soft_deleted_unique')) {
      */
     function release_soft_deleted_unique(string $modelClass, string $column, ?string $value, mixed $ignoreId = null): void
     {
-        if ($value === null || $value === '') {
+        if ($value == null || $value == '') {
             return;
         }
 
