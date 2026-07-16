@@ -74,7 +74,7 @@ class OrderController extends Controller
             'delivery_id' => 'nullable|exists:deliveries,id',
         ]);
 
-        if ($data['status'] === 'shipped') {
+        if ($data['status'] == 'shipped') {
             if (empty($data['delivery_id'])) {
                 return response()->json([
                     'success' => false,

@@ -57,6 +57,8 @@ class AuthController extends Controller
     public function profile()
     {
         $user = Auth::user();
+        $user->load(['addresses', 'branch']);
+
         return response()->json([
             'data' => $user,
         ]);
