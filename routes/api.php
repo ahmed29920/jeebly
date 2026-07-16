@@ -217,6 +217,5 @@ Route::group(['middleware' => ['auth:sanctum', 'locale', 'role:delivery'], 'pref
 
     // set offline
     Route::post('set-offline', [DeliveryController::class, 'setOffline']);
-
     Route::post('orders/{order}/route',[OrderController::class,'updateRoute']);
 });

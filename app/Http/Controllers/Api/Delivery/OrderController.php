@@ -133,29 +133,13 @@ class OrderController extends Controller
             ], 400);
         }
 
-        // Calculate delivery man payment based on settings
-        $calculationMethod = setting('delivery_man_calculation_method', 'percentage');
-        $calculationValue = (float) setting('delivery_man_calculation_value', 0);
-
-        $paymentAmount = 0;
-        if ($calculationMethod === 'percentage') {
-            // Calculate percentage of order final_total
-            $paymentAmount = ($order->final_total * $calculationValue) / 100;
-        } elseif ($calculationMethod === 'fixed') {
-            // Use fixed value
-            $paymentAmount = $calculationValue;
-        }
-
-        // Add payment to delivery man's wallet and record history
-        if ($paymentAmount > 0) {
-            $this->walletHistoryService->recordCredit($delivery, $order, $paymentAmount);
-        }
-
-        // Update order status to completed
+        // Update order status to completed (wallet credit happens in OrderService)
         $data = [
             'status' => 'completed',
         ];
         $result = $this->orderService->update($order, $data);
+
+        $paymentAmount = $this->orderService->calculateDeliveryCommission($order->fresh());
 
         Redis::del('order:'.$order->id);
 

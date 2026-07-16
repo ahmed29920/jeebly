@@ -7,6 +7,7 @@ use App\Mail\OrderCreatedMail;
 use App\Models\Address;
 use App\Models\BranchProductStock;
 use App\Models\BranchVariantStock;
+use App\Models\DeliveryWalletHistory;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
@@ -35,8 +36,18 @@ class OrderService
 
     protected $deliveryService;
 
-    public function __construct(CartService $cartService, CouponService $couponService, OrderRepository $orderRepo, OfferService $offerService, ProductService $productService, BranchService $branchService, DeliveryService $deliveryService)
-    {
+    protected $walletHistoryService;
+
+    public function __construct(
+        CartService $cartService,
+        CouponService $couponService,
+        OrderRepository $orderRepo,
+        OfferService $offerService,
+        ProductService $productService,
+        BranchService $branchService,
+        DeliveryService $deliveryService,
+        DeliveryWalletHistoryService $walletHistoryService,
+    ) {
         $this->cartService = $cartService;
         $this->couponService = $couponService;
         $this->orderRepo = $orderRepo;
@@ -44,6 +55,7 @@ class OrderService
         $this->productService = $productService;
         $this->branchService = $branchService;
         $this->deliveryService = $deliveryService;
+        $this->walletHistoryService = $walletHistoryService;
     }
 
     public function all()
@@ -476,10 +488,18 @@ class OrderService
         $previousStatus = $order->status;
         $order->update($data);
 
-        $order = $order->fresh(['user', 'branch', 'items']);
+        $order = $order->fresh(['user', 'branch', 'items', 'delivery']);
 
         if (isset($data['status']) && $data['status'] !== $previousStatus) {
             $this->notifyOrderUserStatusChange($order, (string) $data['status']);
+        }
+
+        if (
+            isset($data['status'])
+            && $data['status'] === 'completed'
+            && $previousStatus !== 'completed'
+        ) {
+            $this->creditDeliveryWalletOnCompletion($order);
         }
 
         RealtimeService::orderUpdated($order);
@@ -488,6 +508,61 @@ class OrderService
             'success' => true,
             'message' => __('messages.order_updated_successfully'),
         ];
+    }
+
+    /**
+     * Delivery commission for a completed order (settings-based).
+     */
+    public function calculateDeliveryCommission(Order $order): float
+    {
+        $calculationMethod = setting('delivery_man_calculation_method', 'percentage');
+        $calculationValue = (float) setting('delivery_man_calculation_value', 0);
+
+        if ($calculationMethod === 'percentage') {
+            return round(($order->final_total * $calculationValue) / 100, 2);
+        }
+
+        if ($calculationMethod === 'fixed') {
+            return round($calculationValue, 2);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Credit delivery wallet once when order becomes completed.
+     */
+    public function creditDeliveryWalletOnCompletion(Order $order): float
+    {
+        if (! $order->delivery_id || $order->status !== 'completed') {
+            return 0;
+        }
+
+        $alreadyCredited = DeliveryWalletHistory::query()
+            ->where('order_id', $order->id)
+            ->where('type', 'credit')
+            ->exists();
+
+        if ($alreadyCredited) {
+            return (float) DeliveryWalletHistory::query()
+                ->where('order_id', $order->id)
+                ->where('type', 'credit')
+                ->value('amount');
+        }
+
+        $amount = $this->calculateDeliveryCommission($order);
+        if ($amount <= 0) {
+            return 0;
+        }
+
+        $delivery = $order->delivery ?? $this->deliveryService->find($order->delivery_id);
+        if (! $delivery) {
+            return 0;
+        }
+
+        $this->walletHistoryService->recordCredit($delivery, $order, $amount);
+
+        return $amount;
     }
 
     /**
