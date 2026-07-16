@@ -664,12 +664,22 @@ class OrderService
         if (! $delivery->is_online) {
             throw new \Exception(__('messages.delivery_offline_order_paid'));
         }
+
+        $previousStatus = $order->status;
+
         $order->delivery_id = $delivery->id;
         $order->delivery_assigned_at = now();
+        $order->status = 'shipped';
         $order->save();
 
         $order = $order->fresh(['delivery.user', 'user', 'branch', 'items']);
+
         $this->notifyDeliveryOfNewOrder($order);
+
+        if ($previousStatus !== 'shipped') {
+            $this->notifyOrderUserStatusChange($order, 'shipped');
+        }
+
         RealtimeService::assignDelivery($order);
         RealtimeService::orderUpdated($order);
 

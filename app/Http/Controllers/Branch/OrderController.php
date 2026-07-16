@@ -106,6 +106,8 @@ class OrderController extends Controller
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', $e->getMessage());
             }
+
+            return redirect()->back()->with('success', __('messages.order_updated_successfully'));
         }
 
         unset($data['delivery_id']);

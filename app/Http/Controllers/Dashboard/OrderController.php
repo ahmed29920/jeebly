@@ -92,16 +92,17 @@ class OrderController extends Controller
             'delivery_id' => 'nullable|exists:deliveries,id',
         ]);
 
-        // If shipping and delivery_id is provided, assign delivery first
+        // If shipping and delivery_id is provided, assign delivery (also sets status to shipped)
         if ($data['status'] === 'shipped' && isset($data['delivery_id']) && $data['delivery_id']) {
             try {
                 $this->orderService->assignDelivery($order, $data['delivery_id']);
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', $e->getMessage());
             }
+
+            return redirect()->back()->with('success', __('messages.order_updated_successfully'));
         }
 
-        // Remove delivery_id from data as it's already handled by assignDelivery
         unset($data['delivery_id']);
 
         $result = $this->orderService->update($order, $data);

@@ -91,13 +91,19 @@ class OrderController extends Controller
             }
 
             try {
-                $this->orderService->assignDelivery($order, $data['delivery_id']);
+                $order = $this->orderService->assignDelivery($order, $data['delivery_id']);
             } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
                     'message' => $e->getMessage(),
                 ], 400);
             }
+
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.order_updated_successfully'),
+                'data' => OrderResource::make($order),
+            ]);
         }
 
         unset($data['delivery_id']);
@@ -182,6 +188,10 @@ class OrderController extends Controller
 
         $order = $this->orderService->assignDelivery($order, $data['delivery_id']);
 
-        return response()->json(['success' => true, 'message' => __('messages.delivery_assigned_successfully')]);
+        return response()->json([
+            'success' => true,
+            'message' => __('messages.delivery_assigned_successfully'),
+            'data' => OrderResource::make($order),
+        ]);
     }
 }
