@@ -213,6 +213,7 @@
 
     <form id="StatusForm" action="{{ route('branch.orders.update', $order->id) }}" method="POST" style="display: none;">
         <input type="hidden" name="status" id="status_input">
+        <input type="hidden" name="delivery_id" id="delivery_id_input">
         @method('PUT')
         @csrf
     </form>
@@ -220,6 +221,56 @@
     <form id="TransferToAdminForm" action="{{ route('branch.orders.transfer-to-admin', $order->id) }}" method="POST" style="display: none;">
         @csrf
     </form>
+
+    <!-- Delivery Man Selection Modal -->
+    <div class="modal fade" id="deliveryManModal" tabindex="-1" aria-labelledby="deliveryManModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deliveryManModalLabel">
+                        <i class="fa-solid fa-truck me-2"></i>{{ __('Select Delivery Man') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">{{ __('Please select a delivery man to assign to this order:') }}</p>
+                    <div class="mb-3">
+                        <label for="delivery_man_select" class="form-label fw-semibold">{{ __('Delivery Man') }} <span
+                                class="text-danger">*</span></label>
+                        <select class="form-select" id="delivery_man_select" required>
+                            <option value="">{{ __('Select Delivery Man') }}</option>
+                            @foreach (($deliveryMen ?? collect()) as $delivery)
+                                <option value="{{ $delivery->id }}">
+                                    {{ $delivery->user->name ?? '-' }}
+                                    @if ($delivery->branch_id)
+                                        - {{ $delivery->branch->name }}
+                                    @else
+                                        - {{ __('All Branches') }}
+                                    @endif
+                                    @if ($delivery->is_online)
+                                        ({{ __('Online') }})
+                                    @else
+                                        ({{ __('Offline') }})
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted d-block mt-1">
+                            {{ __('Available delivery men: those without branch or with the same branch as the order') }}
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="button" class="btn btn-primary" id="confirmShipBtn">
+                        <i class="fa-solid fa-check me-2"></i>{{ __('Confirm & Ship') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -242,7 +293,6 @@
             });
         }
 
-
         document.querySelectorAll('.status-action').forEach(btn => {
             btn.addEventListener('click', function() {
                 let action = this.dataset.action;
@@ -262,24 +312,54 @@
                         }
                     });
                 } else if (status) {
-                    Swal.fire({
-                        title: "Are you sure?",
-                        text: `Do you want to change order status to ${status}?`,
-                        icon: "warning",
-                        showCancelButton: true,
-                        confirmButtonText: `Yes, ${status.charAt(0).toUpperCase() + status.slice(1)} Order`,
-                        cancelButtonText: "Cancel"
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            document.getElementById('status_input').value = status;
-                            document.getElementById('StatusForm').submit();
-                        }
-                    });
+                    if (status === 'shipped') {
+                        const modal = new bootstrap.Modal(document.getElementById('deliveryManModal'));
+                        modal.show();
+                    } else {
+                        Swal.fire({
+                            title: "Are you sure?",
+                            text: `Do you want to change order status to ${status}?`,
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonText: `Yes, ${status.charAt(0).toUpperCase() + status.slice(1)} Order`,
+                            cancelButtonText: "Cancel"
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                document.getElementById('status_input').value = status;
+                                document.getElementById('StatusForm').submit();
+                            }
+                        });
+                    }
                 }
             });
         });
 
-        // Handle transfer to admin action
+        const confirmShipBtn = document.getElementById('confirmShipBtn');
+        const deliveryManSelect = document.getElementById('delivery_man_select');
+
+        if (confirmShipBtn && deliveryManSelect) {
+            confirmShipBtn.addEventListener('click', function() {
+                const deliveryId = deliveryManSelect.value;
+
+                if (!deliveryId) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Error') }}',
+                        text: '{{ __('Please select a delivery man') }}'
+                    });
+                    return;
+                }
+
+                document.getElementById('delivery_id_input').value = deliveryId;
+                document.getElementById('status_input').value = 'shipped';
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deliveryManModal'));
+                modal.hide();
+
+                document.getElementById('StatusForm').submit();
+            });
+        }
+
         document.querySelectorAll('.transfer-to-admin-action').forEach(btn => {
             btn.addEventListener('click', function() {
                 Swal.fire({

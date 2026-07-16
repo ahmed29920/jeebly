@@ -386,23 +386,3 @@ The driver's wallet is available on the delivery profile:
 | `GET /api/delivery/wallet-history` | Show credits/debits timeline |
 | `GET /api/delivery/orders?status=completed` | General completed orders list (not filtered for COD settlement) |
 
-> Prefer `GET /settleable-orders` over filtering orders client-side for the settlement screen.
-
----
-
-## Quick test checklist
-
-- [ ] Withdraw with amount ≤ wallet → `201`, status `pending`
-- [ ] Withdraw with amount > wallet → `422`
-- [ ] Second withdrawal while one is pending → `422`
-- [ ] Settlement for completed COD order → `201`, amount = `final_total`
-- [ ] Settlement for non-COD order → `422`
-- [ ] Settlement for already-paid order → `422`
-- [ ] List requests shows correct `type`, `status`, `admin_notes` after admin action
-- [ ] Wallet history shows `debit` after withdrawal approved (admin side)
-
----
-
-## Questions?
-
-Contact the backend team for environment base URL, test delivery accounts, and admin dashboard access to approve/reject requests (`/admin/delivery-wallet-requests`).

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Branch;
 
 use App\Exports\OrdersExport;
 use App\Http\Controllers\Controller;
+use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\Zone;
@@ -49,7 +50,15 @@ class OrderController extends Controller
                 ->first(fn (Zone $zone) => $zone->containsPoint(['lat' => $lat, 'lng' => $lng]));
         }
 
-        return view('branch.orders.show', compact('order', 'orderZone'));
+        // Available for this branch: unassigned (all branches) or same branch
+        $deliveryMen = Delivery::with('user', 'branch')
+            ->where(function ($query) use ($branchId) {
+                $query->whereNull('branch_id')
+                    ->orWhere('branch_id', $branchId);
+            })
+            ->get();
+
+        return view('branch.orders.show', compact('order', 'orderZone', 'deliveryMen'));
     }
     public function createInvoice($orderId)
     {
@@ -72,9 +81,34 @@ class OrderController extends Controller
     }
     public function update(Order $order, Request $request)
     {
+        $branchId = Auth::user()->branch_id;
+        if ($order->branch_id !== $branchId) {
+            return redirect()->back()->with('error', __('Order not found or not accessible'));
+        }
+
         $data = $request->validate([
             'status' => 'required|in:pending,processing,shipped,completed,cancelled',
+            'delivery_id' => 'nullable|exists:deliveries,id',
         ]);
+
+        if ($data['status'] === 'shipped') {
+            if (empty($data['delivery_id'])) {
+                return redirect()->back()->with('error', __('Please select a delivery man'));
+            }
+
+            $delivery = $this->deliveryService->find($data['delivery_id']);
+            if (! $delivery || ($delivery->branch_id && $delivery->branch_id != $branchId)) {
+                return redirect()->back()->with('error', __('Delivery is not available for this branch'));
+            }
+
+            try {
+                $this->orderService->assignDelivery($order, $data['delivery_id']);
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', $e->getMessage());
+            }
+        }
+
+        unset($data['delivery_id']);
 
         $result = $this->orderService->update($order, $data);
 
@@ -106,11 +140,8 @@ class OrderController extends Controller
 
         $delivery = $this->deliveryService->find($data['delivery_id']);
         $branchId = Auth::user()->branch_id;
-        if($branchId != $delivery->branch_id){
-            return redirect()->back()->with('error', 'You are not authorized to assign this delivery to this order');
-        }
-        if($delivery->branch_id && $delivery->branch_id != $branchId){
-            return redirect()->back()->with('error', 'Delivery is not assigned to the same branch as the order');
+        if (! $delivery || ($delivery->branch_id && $delivery->branch_id != $branchId)) {
+            return redirect()->back()->with('error', __('Delivery is not available for this branch'));
         }
 
         $order = $this->orderService->assignDelivery($order, $data['delivery_id']);
