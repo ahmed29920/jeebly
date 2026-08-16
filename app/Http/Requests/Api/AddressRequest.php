@@ -25,7 +25,7 @@ class AddressRequest extends FormRequest
             'phone'       => 'required|string|max:20',
             'address'     => 'required|string|max:500',
             'city'        => 'required|string|max:100',
-            'country'     => 'required|string|max:100',
+            'country'     => 'nullable|string|max:100',
             'state'       => 'nullable|string|max:100',
             'postal_code' => 'nullable|string|max:20',
             'latitude'    => ['nullable', 'numeric', function (string $attribute, mixed $value, \Closure $fail) {

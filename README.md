@@ -1,7 +1,7 @@
-# Perfulava E-commerce Platform
+# Jeeble E-commerce Platform
 
 ## About
-Perfulava is a comprehensive e-commerce platform built with Laravel that supports multi-language content, advanced product management with variants, flexible pricing, inventory management, sophisticated discount systems (offers, coupons, points), invitation/referral system, booking lists, and complete order management capabilities.
+Jeeble is a comprehensive e-commerce platform built with Laravel that supports multi-language content, advanced product management with variants, flexible pricing, inventory management, sophisticated discount systems (offers, coupons, points), invitation/referral system, booking lists, and complete order management capabilities.
 
 ---
 

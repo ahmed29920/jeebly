@@ -575,10 +575,15 @@ class OrderService
             return;
         }
 
+        $statusLabel = __('messages.order_statuses.' . $status);
+        if ($statusLabel === 'messages.order_statuses.' . $status) {
+            $statusLabel = $status;
+        }
+
         $title = __('messages.order_status_updated_title');
         $body = __('messages.order_status_updated_body', [
             'id' => $order->id,
-            'status' => $status,
+            'status' => $statusLabel,
         ]);
 
         $data = [
