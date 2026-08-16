@@ -23,7 +23,9 @@ class AddressController extends Controller
 
     public function store(AddressRequest $request)
     {
-        $address = $this->addressService->store($request->validated(), $request->user()->id);
+        $data = $request->validated();
+	$data['country'] = "--";
+        $address = $this->addressService->store($data, $request->user()->id);
         return new AddressResource($address);
     }
 
